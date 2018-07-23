@@ -89,11 +89,21 @@ namespace WaterMod
 
     class WaterBuoyancy : MonoBehaviour
     {
+        public static Texture2D CameraFilter;
         public static float Height = 25f;
         public static float Density = 8f;
         public byte heartBeat;
         public static WaterBuoyancy _inst;
         public GameObject folder;
+
+        private void OnGUI()
+        {
+            if (Camera.main.transform.position.y < folder.transform.position.y)
+            {
+                GUI.DrawTexture(new Rect(0f, 0f, (float)Screen.width, (float)Screen.height), CameraFilter, ScaleMode.ScaleAndCrop);
+            }
+        }
+
         private void OnTriggerStay(Collider collider)
         {
             var wEffect = collider.GetComponentInParent<WaterEffect>();
@@ -103,6 +113,7 @@ namespace WaterMod
                 wEffect.ApplyForce(heartBeat);
             }
         }
+
         private void OnTriggerEnter(Collider collider)
         {
             var wEffect = collider.GetComponentInParent<WaterEffect>();
@@ -112,6 +123,7 @@ namespace WaterMod
                 wEffect.ApplyForceEnter(heartBeat);
             }
         }
+
         private void OnTriggerExit(Collider collider)
         {
             var wEffect = collider.GetComponentInParent<WaterEffect>();
@@ -121,16 +133,33 @@ namespace WaterMod
                 wEffect.ApplyForceExit(heartBeat);
             }
         }
+
         private void FixedUpdate()
         {
             heartBeat++;
         }
+
         private void Update()
         {
             folder.transform.position = new Vector3(Singleton.camera.transform.position.x, folder.transform.position.y, Singleton.camera.transform.position.z);
         }
+
         public static void Initiate()
         {
+            CameraFilter = new Texture2D(32, 32);
+            for (int i = 0; i < 32; i++)
+            {
+                for (int j = 0; j < 32; j++)
+                {
+                    CameraFilter.SetPixel(i, j, new Color(
+                        0.7f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.02f,
+                        0.8f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.01f,
+                        1f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.03f,
+                        0.26f));
+                }
+            }
+            CameraFilter.Apply();
+
             Material material = new Material(Shader.Find("Standard"));
             material.color = new Color(0.2f, 1f, 1f, 0.45f);
             material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.8f); material.SetFloat("_Glossiness", 0.8f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
