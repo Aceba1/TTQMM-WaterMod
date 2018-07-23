@@ -10,7 +10,7 @@ namespace WaterMod
     {
         public static void Main()
         {
-            var harmony = HarmonyInstance.Create("ttmm.revive.water");
+            var harmony = HarmonyInstance.Create("aceba1.ttmm.revive.water");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             WaterBuoyancy.Initiate();
         }
