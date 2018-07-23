@@ -188,6 +188,11 @@ namespace WaterMod
 
         public class WaterEffect : MonoBehaviour
         {
+            public WaterEffect()
+            {
+                heartBeat = 0;
+                isProjectile = false;
+            }
             public byte heartBeat;
             public EffectTypes effectType;
             public Rigidbody rbody;
