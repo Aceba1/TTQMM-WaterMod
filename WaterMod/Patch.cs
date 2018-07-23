@@ -27,7 +27,6 @@ namespace WaterMod
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.TankBlock;
-                wEffect.rbody = __instance.rbody;
             }
         }
         [HarmonyPatch(typeof(Projectile))]
@@ -42,7 +41,6 @@ namespace WaterMod
                 wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.NormalProjectile;
-                wEffect.rbody = __instance.rbody;
             }
         }
         [HarmonyPatch(typeof(LaserProjectile))]
@@ -56,7 +54,6 @@ namespace WaterMod
                     wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
-                wEffect.rbody = __instance.rbody;
             }
         }
         [HarmonyPatch(typeof(MissileProjectile))]
@@ -70,7 +67,6 @@ namespace WaterMod
                     wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
-                wEffect.rbody = __instance.rbody;
             }
         }
         [HarmonyPatch(typeof(ResourcePickup))]
@@ -82,7 +78,6 @@ namespace WaterMod
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.ResourceChunk;
-                wEffect.rbody = __instance.rbody;
             }
         }
     }
@@ -192,6 +187,11 @@ namespace WaterMod
             {
                 heartBeat = 0;
                 isProjectile = false;
+                rbody = this.GetComponent<Rigidbody>();
+                if (rbody == null)
+                {
+                    rbody = this.GetComponentInParent<Rigidbody>();
+                }
             }
             public byte heartBeat;
             public EffectTypes effectType;
@@ -207,6 +207,10 @@ namespace WaterMod
                 {
                     Vector3 angularVelocity = rbody.angularVelocity;
                     IntVector3[] intVector = (effectBase as TankBlock).filledCells;
+                    if (intVector == null || intVector.Length == 0)
+                    {
+                        intVector = new IntVector3[] { IntVector3.zero };
+                    }
                     int num = intVector.Length;
                     Vector3 thing = (rbody.velocity.magnitude < 0.8f ? rbody.velocity : rbody.velocity.normalized * 0.8f) * (Density / 40000f);
                     for (int i = 0; i < num; i++)
@@ -228,10 +232,10 @@ namespace WaterMod
                             rbody.AddForceAtPosition(Vector3.up * (num2 * Density * 5f - rbody.velocity.y * num2 * 0.2f), vector);
                             Vector3 force = thing * num2 / num;
                             rbody.AddForce(force);
-
                         }
                     }
                 }
+                else
                 {
                     switch (effectType)
                     {
@@ -279,7 +283,7 @@ namespace WaterMod
                         case EffectTypes.LaserProjectile:
                             var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
                             managedEvent2.Reset(managedEvent2.TimeRemaining * 8f);
-                            (this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent",managedEvent2);
+                            (this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
                             rbody.velocity = rbody.velocity * 0.3f;
                             break;
                     }
