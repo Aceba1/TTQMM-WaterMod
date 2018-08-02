@@ -27,7 +27,6 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "LaserFraction");
             _thisMod = thisMod;
         }
-
     }
     class Patches
     {
@@ -132,7 +131,7 @@ namespace WaterMod
     class WaterBuoyancy : MonoBehaviour
     {
         public static Texture2D CameraFilter;
-        public static float Height = -25f, FanJetMultiplier = 2.5f, BulletDampener = 0.0000002f, LaserFraction = 0.4f, MissileDampener = 0.002f;
+        public static float Height = -25f, FanJetMultiplier = 2.5f, BulletDampener = 1E-06f, LaserFraction = 0.4f, MissileDampener = 0.016f;
         public static int Density = 8;
         public byte heartBeat;
         public static WaterBuoyancy _inst;
