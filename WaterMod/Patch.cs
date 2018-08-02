@@ -136,6 +136,8 @@ namespace WaterMod
         public byte heartBeat;
         public static WaterBuoyancy _inst;
         public GameObject folder;
+        private bool ShowGUI = false;
+        private Rect Window = new Rect(0, 0, 100, 140);
 
         private void OnGUI()
         {
@@ -143,17 +145,24 @@ namespace WaterMod
             {
                 GUI.DrawTexture(new Rect(0f, 0f, (float)Screen.width, (float)Screen.height), CameraFilter, ScaleMode.ScaleAndCrop);
             }
-            GUI.Label(new Rect(100, 40, 100, 15), "Water Height");
-            Height = GUI.HorizontalSlider(new Rect(100, 55, 100, 15), Height, -75f, 100f);
-            GUI.Label(new Rect(100, 70, 100, 15), "Water Density");
-            Density = (int)Mathf.Round(GUI.HorizontalSlider(new Rect(100, 85, 100, 15), Density, 1f, 10f));
-
-            if (GUI.Button(new Rect(100, 100, 100, 20), "Save"))
-                QPatch._thisMod.WriteConfigJsonFile();
-            if (GUI.Button(new Rect(100, 120, 100, 20), "Reload"))
-                ModConfig.ReadConfigJsonFile(QPatch._thisMod);
+            if (ShowGUI)
+            {
+                Window = GUI.Window(0, Window, GUIWindow, "WaterMod Settings");
+            }
         }
+        private void GUIWindow(int ID)
+        {
+            GUI.Label(new Rect(0, 20, 100, 20), "Water Height");
+            Height = GUI.HorizontalSlider(new Rect(0, 40, 100, 15), Height, -75f, 100f);
+            GUI.Label(new Rect(0, 60, 100, 20), "Water Density");
+            Density = (int)Mathf.Round(GUI.HorizontalSlider(new Rect(0, 80, 100, 15), Density, 1f, 10f));
 
+            if (GUI.Button(new Rect(0, 100, 100, 20), "Save"))
+                QPatch._thisMod.WriteConfigJsonFile();
+            if (GUI.Button(new Rect(0, 120, 100, 20), "Reload"))
+                ModConfig.ReadConfigJsonFile(QPatch._thisMod);
+            GUI.DragWindow();
+        }
         private void OnTriggerStay(Collider collider)
         {
             var wEffect = collider.GetComponentInParent<WaterEffect>();
@@ -190,6 +199,10 @@ namespace WaterMod
         }
         private void Update()
         {
+            if (Input.GetKeyDown(KeyCode.Slash))
+            {
+                ShowGUI = !ShowGUI;
+            }
             folder.transform.position = new Vector3(Singleton.camera.transform.position.x, Height, Singleton.camera.transform.position.z);
         }
 
