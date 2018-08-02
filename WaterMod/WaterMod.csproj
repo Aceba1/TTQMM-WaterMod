@@ -34,13 +34,16 @@
       <HintPath>..\..\..\HARMONY_RELEASE\net471\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="AcModHelper">
+      <HintPath>..\..\TerraTech-QModManager\Installer\AcModHelper.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\TerraTech-QModManager\Dependencies\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="QModInstaller, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="QModInstaller">
       <HintPath>..\..\TerraTech-QModManager\Installer\QModInstaller.dll</HintPath>
-      <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />

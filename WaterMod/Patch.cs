@@ -3,19 +3,32 @@ using Harmony;
 using System.Reflection;
 using UnityEngine;
 using QModInstaller;
+using ModHelper;
 
 namespace WaterMod
 {
     class QPatch
     {
+
+        public static ModConfig _thisMod;
         public static void Main()
         {
-            var harmony = HarmonyInstance.Create("aceba1.ttmm.revive.water");
+            var harmony = HarmonyInstance.Create("aceba1.ttmm.revived.water");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            WaterBuoyancy.Initiate();
-        }
-    }
 
+            WaterBuoyancy.Initiate();
+
+            ModConfig thisMod = new ModConfig();
+            thisMod.BindConfig<WaterBuoyancy>(null, "Height");
+            thisMod.BindConfig<WaterBuoyancy>(null, "Density");
+            thisMod.BindConfig<WaterBuoyancy>(null, "FanJetMultiplier");
+            thisMod.BindConfig<WaterBuoyancy>(null, "BulletDampener");
+            thisMod.BindConfig<WaterBuoyancy>(null, "MissileDampener");
+            thisMod.BindConfig<WaterBuoyancy>(null, "LaserFraction");
+            _thisMod = thisMod;
+        }
+
+    }
     class Patches
     {
         [HarmonyPatch(typeof(TankBlock))]
@@ -27,20 +40,63 @@ namespace WaterMod
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.TankBlock;
+                wEffect.GetTankBlockRBody();
+                if (__instance.BlockCategory == BlockCategories.Flight)
+                {
+                    var component = __instance.GetComponent<FanJet>();
+                    if (component != null)
+                    {
+                        wEffect.isFanJet = true;
+                        wEffect.componentEffect = component;
+                    }
+                }
             }
         }
+        //         [HarmonyPatch(typeof(TankBlock))]
+        //         [HarmonyPatch("OnAttach")]
+        //         class Patch1_1
+        //         {
+        //             static void Postfix(TankBlock __instance)
+        //             {
+        //                 var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterEffect>();
+        //                 if (wEffect != null)
+        //                     wEffect.GetTankBlockRBody();
+        //             }
+        //         }
+        //         [HarmonyPatch(typeof(TankBlock))]
+        //         [HarmonyPatch("OnDetach")]
+        //         class Patch1_2
+        //         {
+        //             static void Postfix(TankBlock __instance)
+        //             {
+        //                 var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterEffect>();
+        //                 if (wEffect != null)
+        //                     wEffect.GetTankBlockRBody();
+        //             }
+        //         }
+
         [HarmonyPatch(typeof(Projectile))]
         [HarmonyPatch("OnSpawn")]
         class Patch2
         {
             static void Postfix(Projectile __instance)
             {
+                var __minstance = __instance.GetComponent<MissileProjectile>();
+                if (__minstance != null)
+                {
+                    Collider collider = __minstance.GetComponentInChildren<Collider>();
+                    var wEffect2 = collider.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
+                    wEffect2.effectBase = __minstance;
+                    wEffect2.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
+                    wEffect2.GetRBody();
+                }
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterEffect>();
                 if (wEffect != null)
                     return;
                 wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.NormalProjectile;
+                wEffect.GetRBody();
             }
         }
         [HarmonyPatch(typeof(LaserProjectile))]
@@ -50,43 +106,34 @@ namespace WaterMod
             static void Postfix(LaserProjectile __instance)
             {
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterEffect>();
-                if (wEffect == null)
-                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
+                if (wEffect != null)
+                    return;
+                wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
-            }
-        }
-        [HarmonyPatch(typeof(MissileProjectile))]
-        [HarmonyPatch("OnSpawn")]
-        class Patch4
-        {
-            static void Postfix(MissileProjectile __instance)
-            {
-                var wEffect = __instance.GetComponent<WaterBuoyancy.WaterEffect>();
-                if (wEffect == null)
-                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
-                wEffect.effectBase = __instance;
-                wEffect.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
+                wEffect.GetRBody();
             }
         }
         [HarmonyPatch(typeof(ResourcePickup))]
         [HarmonyPatch("OnSpawn")]
-        class Patch5
+        class Patch4
         {
             static void Postfix(ResourcePickup __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.ResourceChunk;
+                wEffect.GetRBody();
             }
         }
+        
     }
 
     class WaterBuoyancy : MonoBehaviour
     {
         public static Texture2D CameraFilter;
-        public static float Height = 25f;
-        public static float Density = 8f;
+        public static float Height = -25f, FanJetMultiplier = 2.5f, BulletDampener = 0.0000002f, LaserFraction = 0.4f, MissileDampener = 0.002f;
+        public static int Density = 8;
         public byte heartBeat;
         public static WaterBuoyancy _inst;
         public GameObject folder;
@@ -97,6 +144,15 @@ namespace WaterMod
             {
                 GUI.DrawTexture(new Rect(0f, 0f, (float)Screen.width, (float)Screen.height), CameraFilter, ScaleMode.ScaleAndCrop);
             }
+            GUI.Label(new Rect(100, 40, 100, 15), "Water Height");
+            Height = GUI.HorizontalSlider(new Rect(100, 55, 100, 15), Height, -75f, 100f);
+            GUI.Label(new Rect(100, 70, 100, 15), "Water Density");
+            Density = (int)Mathf.Round(GUI.HorizontalSlider(new Rect(100, 85, 100, 15), Density, 1f, 10f));
+
+            if (GUI.Button(new Rect(100, 100, 100, 20), "Save"))
+                QPatch._thisMod.WriteConfigJsonFile();
+            if (GUI.Button(new Rect(100, 120, 100, 20), "Reload"))
+                ModConfig.ReadConfigJsonFile(QPatch._thisMod);
         }
 
         private void OnTriggerStay(Collider collider)
@@ -133,10 +189,9 @@ namespace WaterMod
         {
             heartBeat++;
         }
-
         private void Update()
         {
-            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, folder.transform.position.y, Singleton.camera.transform.position.z);
+            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, Height, Singleton.camera.transform.position.z);
         }
 
         public static void Initiate()
@@ -147,9 +202,9 @@ namespace WaterMod
                 for (int j = 0; j < 32; j++)
                 {
                     CameraFilter.SetPixel(i, j, new Color(
-                        0.7f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.02f,
+                        0.75f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.015f,
                         0.8f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.01f,
-                        1f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.03f,
+                        0.9f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.025f,
                         0.26f));
                 }
             }
@@ -162,15 +217,16 @@ namespace WaterMod
             material.renderQueue = 3000;
 
             var folder = new GameObject("WaterObject");
+            folder.transform.position = Vector3.zero;
 
             GameObject gameObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            UnityEngine.Object.Destroy(gameObject.GetComponent<CapsuleCollider>());
+            Destroy(gameObject.GetComponent<CapsuleCollider>());
             Transform component = gameObject.GetComponent<Transform>(); component.SetParent(folder.transform);
             component.localScale = new Vector3(2048f, 0.075f, 2048f); component.localPosition = new Vector3(0f, 0f, 0f);
             gameObject.GetComponent<Renderer>().material = material;
 
             GameObject gameObject2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            UnityEngine.Object.Destroy(gameObject2.GetComponent<Renderer>());
+            Destroy(gameObject2.GetComponent<Renderer>());
             Transform component2 = gameObject2.GetComponent<Transform>(); component2.SetParent(folder.transform);
             component2.localScale = new Vector3(2048f, 1024f, 2048f); component2.localPosition = new Vector3(0f, -512f, 0f);
             gameObject2.GetComponent<BoxCollider>().isTrigger = true;
@@ -187,132 +243,256 @@ namespace WaterMod
             {
                 heartBeat = 0;
                 isProjectile = false;
-                rbody = this.GetComponent<Rigidbody>();
-                if (rbody == null)
-                {
-                    rbody = this.GetComponentInParent<Rigidbody>();
-                }
             }
+
             public byte heartBeat;
             public EffectTypes effectType;
-            public Rigidbody rbody;
             public object effectBase;
             public bool isProjectile;
-            public void ApplyForce(byte HeartBeat)
-            {
-                if (HeartBeat == heartBeat)
-                    return;
-                heartBeat = HeartBeat;
-                if (effectType == EffectTypes.TankBlock)
-                {
-                    Vector3 angularVelocity = rbody.angularVelocity;
-                    IntVector3[] intVector = (effectBase as TankBlock).filledCells;
-                    if (intVector == null || intVector.Length == 0)
-                    {
-                        intVector = new IntVector3[] { IntVector3.zero };
-                    }
-                    int num = intVector.Length;
-                    Vector3 thing = (rbody.velocity.magnitude < 0.8f ? rbody.velocity : rbody.velocity.normalized * 0.8f) * (Density / 40000f);
-                    for (int i = 0; i < num; i++)
-                    {
-                        Vector3 vector = transform.TransformPoint(intVector[i].x, intVector[i].y, intVector[i].z);
-                        float num2 = Height - vector.y - (effectBase as TankBlock).BlockCellBounds.extents.y;
-                        num2 = num2 * num2 - 1f;
-                        if (num2 >= -0.5f)
-                        {
-                            if (num2 > 1.5f)
-                            {
-                                num2 = 1.5f;
-                            }
+            public Rigidbody _rbody;
+            public Vector3 initVelocity;
+            public bool isFanJet;
+            public MonoBehaviour componentEffect;
 
-                            if (num2 < -0.1f)
-                            {
-                                num2 = -0.1f;
-                            }
-                            rbody.AddForceAtPosition(Vector3.up * (num2 * Density * 5f - rbody.velocity.y * num2 * 0.2f), vector);
-                            Vector3 force = thing * num2 / num;
-                            rbody.AddForce(force);
-                        }
+            public void GetTankBlockRBody()
+            {
+                var tankblock = (effectBase as TankBlock);
+                _rbody = tankblock.rbody;
+                if (_rbody == null)
+                {
+                    _rbody = tankblock.GetComponent<Rigidbody>();
+                    if (_rbody == null)
+                    {
+                        _rbody = tankblock.GetComponentInParent<Rigidbody>();
                     }
                 }
-                else
+            }
+            public void GetRBody()
+            {
+                switch (effectType)
                 {
-                    switch (effectType)
+                    case EffectTypes.TankBlock:
+                        GetTankBlockRBody();
+                        break;
+
+                    case EffectTypes.ResourceChunk:
+                        _rbody = ((ResourcePickup)effectBase).rbody;
+                        break;
+
+                    case EffectTypes.LaserProjectile:
+                    case EffectTypes.MissileProjectile:
+                    case EffectTypes.NormalProjectile:
+                        _rbody = ((Projectile)effectBase).GetComponent<Rigidbody>();
+                        if (_rbody == null)
+                        {
+                            _rbody = (effectBase as Projectile).GetComponentInParent<Rigidbody>();
+                            if (_rbody == null)
+                            {
+                                _rbody = (effectBase as Projectile).GetComponentInChildren<Rigidbody>();
+                            }
+                        }
+                        break;
+                }
+            }
+
+            public void ApplyMultiplierFanJet(TankBlock tankblock)
+            {
+                float num2 = (Height - componentEffect.transform.position.y + tankblock.BlockCellBounds.extents.y) / tankblock.BlockCellBounds.extents.y + 0.1f;
+                {
+                    if (num2 < 1f)
                     {
-                        case EffectTypes.NormalProjectile:
-                        case EffectTypes.MissileProjectile:
-                            rbody.velocity += (rbody.velocity - rbody.velocity * rbody.velocity.magnitude * (1f - Density / 20000f)) * 0.0025f;
-                            break;
-                        case EffectTypes.ResourceChunk:
-                            float num2 = Height - rbody.position.y;
-                            num2 = num2 * num2 - 1f;
+                        num2 = 1f;
+                    }
+                    FanJet component = (componentEffect as FanJet);
+                    if (initVelocity == Vector3.zero) initVelocity = new Vector3(component.force, component.backForce, 0f);
+                    component.force = initVelocity.x * (num2 * FanJetMultiplier + 1);
+                    component.backForce = initVelocity.y * (num2 * FanJetMultiplier + 1);
+                }
+            }
+            public void ResetMultiplierFanJet()
+            {
+                FanJet component = (componentEffect as FanJet);
+                component.force = initVelocity.x;
+                component.backForce = initVelocity.y;
+            }
+
+            public void ApplyForce(byte HeartBeat)
+            {
+                try
+                {
+                    if (HeartBeat == heartBeat)
+                        return;
+                    heartBeat = HeartBeat;
+                    if (effectType == EffectTypes.TankBlock)
+                    {
+                        GetTankBlockRBody();
+                        var tankblock = (effectBase as TankBlock);
+                        Vector3 angularVelocity = _rbody.angularVelocity;
+                        IntVector3[] intVector = tankblock.filledCells;
+                        if (intVector == null || intVector.Length <= 1)
+                        {
+                            intVector = new IntVector3[] { IntVector3.zero };
+                        }
+                        int num = intVector.Length;
+                        Vector3 thing = (_rbody.velocity.magnitude < 0.8f ? _rbody.velocity : _rbody.velocity.normalized * 0.8f) * -(Density / 8500f);
+                        for (int i = 0; i < num; i++)
+                        {
+                            Vector3 vector;
+                            if (num == 1)
+                                vector = tankblock.centreOfMassWorld;
+                            else
+                                vector = transform.TransformPoint(intVector[i].x, intVector[i].y, intVector[i].z);
+                            float num2 = Height - vector.y - tankblock.BlockCellBounds.extents.y;
+                            num2 = num2 * Mathf.Abs(num2) + 0.25f;
                             if (num2 >= -0.5f)
                             {
+                                float yEffector = _rbody.velocity.y * Density * 0.1f;
                                 if (num2 > 1.5f)
                                 {
                                     num2 = 1.5f;
                                 }
-
-                                if (num2 < -0.1f)
+                                else if (num2 < -0.1f)
                                 {
                                     num2 = -0.1f;
                                 }
-                                rbody.AddForce(Vector3.up * Density * num2, ForceMode.Force);
-                                rbody.velocity += (rbody.velocity - rbody.velocity * rbody.velocity.magnitude * (1f - Density / 20000f)) * 0.0025f;
+                                else
+                                {
+                                    yEffector *= 4f;
+                                }
+                                _rbody.AddForceAtPosition(Vector3.up * (num2 * Density * 5f - yEffector), vector);
                             }
-                            break;
-                        default:
-                            break;
+                        }
+                        _rbody.AddForce(thing);
+                        if (this.isFanJet)
+                        {
+                            ApplyMultiplierFanJet(tankblock);
+                        }
+
+                    }
+                    else
+                    {
+                        switch (effectType)
+                        {
+                            case EffectTypes.NormalProjectile:
+                                _rbody.velocity *= 1f - (Density * BulletDampener);
+                                break;
+                            case EffectTypes.MissileProjectile:
+                                _rbody.velocity *= 1f - (Density * MissileDampener);
+                                break;
+                            case EffectTypes.ResourceChunk:
+                                float num2 = Height - _rbody.position.y;
+                                num2 = num2 * num2;// - 1f;
+                                if (num2 >= -0.5f)
+                                {
+                                    if (num2 > 1.5f)
+                                    {
+                                        num2 = 1.5f;
+                                    }
+
+                                    if (num2 < -0.1f)
+                                    {
+                                        num2 = -0.1f;
+                                    }
+                                    _rbody.AddForce(Vector3.up * Density * num2, ForceMode.Force);
+                                    _rbody.velocity -= (_rbody.velocity * _rbody.velocity.magnitude * (1f - Density / 10000f)) * 0.0025f;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
+                catch (Exception e)
+                {
+                    Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString());
+                }
+
             }
+
             public bool ApplyForceEnter(byte HeartBeat)
             {
-                if (heartBeat == HeartBeat)
-                    return false;
-                heartBeat = HeartBeat;
-                if (isProjectile)
+                try
                 {
+                    //if (heartBeat == HeartBeat)
+                    //    return false;
+                    //heartBeat = HeartBeat;
                     switch (effectType)
                     {
                         case EffectTypes.MissileProjectile:
-                            var managedEvent = (this.effectBase as MissileProjectile).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
-                            managedEvent.Reset(managedEvent.TimeRemaining * 8f);
-                            (this.effectBase as MissileProjectile).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
-                            break;
                         case EffectTypes.LaserProjectile:
+                            float destroyMultiplier = 4f;
+                            if (effectType == EffectTypes.MissileProjectile)
+                            {
+                                destroyMultiplier += 1f;
+                                var managedEvent = ((MissileProjectile)this.effectBase).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
+                                if (managedEvent.TimeRemaining != 0) managedEvent.Reset(managedEvent.TimeRemaining * 4f);
+                                //((MissileProjectile)this.effectBase).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
+                                _rbody.useGravity = false;
+                            }
+                            initVelocity = _rbody.velocity;
+                            _rbody.velocity = initVelocity * (1f / (Density * LaserFraction + 1f));
                             var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
-                            managedEvent2.Reset(managedEvent2.TimeRemaining * 8f);
-                            (this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
-                            rbody.velocity = rbody.velocity * 0.3f;
+                            managedEvent2.Reset(managedEvent2.TimeRemaining * destroyMultiplier);
+                            
+                            //(this.effectBase as LaserProjectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
+
                             break;
-                    }
+                    };
+                    return true;
                 }
-                return true;
+                catch (Exception e)
+                {
+                    Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString());
+                    return false;
+                }
             }
+
             public bool ApplyForceExit(byte HeartBeat)
             {
-                if (heartBeat == HeartBeat)
-                    return false;
-                heartBeat = HeartBeat;
-                if (isProjectile)
+                try
                 {
                     switch (effectType)
                     {
                         case EffectTypes.MissileProjectile:
-                            var managedEvent = (this.effectBase as MissileProjectile).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
-                            managedEvent.Reset(managedEvent.TimeRemaining * .125f);
-                            (this.effectBase as MissileProjectile).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
-                            break;
                         case EffectTypes.LaserProjectile:
+                            float destroyMultiplier = 4f;
+                            if (effectType == EffectTypes.MissileProjectile)
+                            {
+                                destroyMultiplier += 1f;
+                                var managedEvent = (this.effectBase as MissileProjectile).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
+                                if (managedEvent.TimeRemaining == 0f)
+                                {
+                                    _rbody.useGravity = true;
+                                }
+                                else
+                                {
+                                    managedEvent.Reset(managedEvent.TimeRemaining * .25f);
+                                }
+                                //(this.effectBase as MissileProjectile).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
+                            }
+                            else
+                            {
+                                _rbody.velocity = initVelocity * (Density * 0.025f * LaserFraction + 1f);
+                            }
                             var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
-                            managedEvent2.Reset(managedEvent2.TimeRemaining * .125f);
-                            (this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
-                            rbody.velocity = rbody.velocity * 4f;
+                            managedEvent2.Reset(managedEvent2.TimeRemaining / destroyMultiplier);
+                            //(this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
+
+                            break;
+                        case EffectTypes.TankBlock:
+                            if (isFanJet)
+                            {
+                                ResetMultiplierFanJet();
+                            }
                             break;
                     }
+                    return true;
                 }
-                return true;
+                catch (Exception e)
+                {
+                    Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString());
+                    return false;
+                }
             }
         }
         public enum EffectTypes : byte
