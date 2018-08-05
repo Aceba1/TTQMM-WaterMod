@@ -1,16 +1,16 @@
-﻿using System;
-using Harmony;
+﻿using Harmony;
+using QModInstaller;
+using System;
 using System.Reflection;
 using UnityEngine;
-using QModInstaller;
-using ModHelper;
+using ModHelper.Config;
 
 namespace WaterMod
 {
-    class QPatch
+    public class QPatch
     {
-
         public static ModConfig _thisMod;
+
         public static void Main()
         {
             var harmony = HarmonyInstance.Create("aceba1.ttmm.revived.water");
@@ -22,19 +22,21 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "Height");
             thisMod.BindConfig<WaterBuoyancy>(null, "Density");
             thisMod.BindConfig<WaterBuoyancy>(null, "FanJetMultiplier");
+            thisMod.BindConfig<WaterBuoyancy>(null, "ResourceBuoyancyMultiplier");
             thisMod.BindConfig<WaterBuoyancy>(null, "BulletDampener");
             thisMod.BindConfig<WaterBuoyancy>(null, "MissileDampener");
             thisMod.BindConfig<WaterBuoyancy>(null, "LaserFraction");
             _thisMod = thisMod;
         }
     }
-    class Patches
+
+    internal class Patches
     {
         [HarmonyPatch(typeof(TankBlock))]
         [HarmonyPatch("OnSpawn")]
-        class Patch1
+        private class Patch1
         {
-            static void Postfix(TankBlock __instance)
+            private static void Postfix(TankBlock __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
@@ -42,26 +44,28 @@ namespace WaterMod
                 wEffect.GetTankBlockRBody();
                 if (__instance.BlockCategory == BlockCategories.Flight)
                 {
-                    var component = __instance.GetComponent<FanJet>();
+                    var component = __instance.GetComponentInChildren<FanJet>();
                     if (component != null)
                     {
                         wEffect.isFanJet = true;
                         wEffect.componentEffect = component;
+                        wEffect.initVelocity = new Vector3(component.force, component.backForce, 0f);
                     }
                 }
             }
         }
-        //         [HarmonyPatch(typeof(TankBlock))]
-        //         [HarmonyPatch("OnAttach")]
-        //         class Patch1_1
-        //         {
-        //             static void Postfix(TankBlock __instance)
-        //             {
-        //                 var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterEffect>();
-        //                 if (wEffect != null)
-        //                     wEffect.GetTankBlockRBody();
-        //             }
-        //         }
+
+        //[HarmonyPatch(typeof(TankBlock))]
+        //[HarmonyPatch("OnAttach")]
+        //private class Patch1_1
+        //{
+        //    private static void Postfix(TankBlock __instance)
+        //    {
+        //        var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterEffect>();
+        //        wEffect.watertank = __instance.tank.GetComponent<WaterBuoyancy.TankEffect>();
+        //    }
+        //}
+
         //         [HarmonyPatch(typeof(TankBlock))]
         //         [HarmonyPatch("OnDetach")]
         //         class Patch1_2
@@ -74,11 +78,27 @@ namespace WaterMod
         //             }
         //         }
 
+        [HarmonyPatch(typeof(LaserProjectile))]
+        [HarmonyPatch("OnSpawn")]
+        private class Patch2
+        {
+            private static void Postfix(LaserProjectile __instance)
+            {
+                var wEffect = __instance.GetComponent<WaterBuoyancy.WaterEffect>();
+                if (wEffect != null && wEffect.effectType < WaterBuoyancy.EffectTypes.NormalProjectile)
+                    return;
+                wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
+                wEffect.effectBase = __instance;
+                wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
+                wEffect.GetRBody();
+            }
+        }
+
         [HarmonyPatch(typeof(Projectile))]
         [HarmonyPatch("OnSpawn")]
-        class Patch2
+        private class Patch3
         {
-            static void Postfix(Projectile __instance)
+            private static void Postfix(Projectile __instance)
             {
                 var __minstance = __instance.GetComponent<MissileProjectile>();
                 if (__minstance != null)
@@ -98,26 +118,12 @@ namespace WaterMod
                 wEffect.GetRBody();
             }
         }
-        [HarmonyPatch(typeof(LaserProjectile))]
-        [HarmonyPatch("OnSpawn")]
-        class Patch3
-        {
-            static void Postfix(LaserProjectile __instance)
-            {
-                var wEffect = __instance.GetComponent<WaterBuoyancy.WaterEffect>();
-                if (wEffect != null)
-                    return;
-                wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
-                wEffect.effectBase = __instance;
-                wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
-                wEffect.GetRBody();
-            }
-        }
+
         [HarmonyPatch(typeof(ResourcePickup))]
         [HarmonyPatch("OnSpawn")]
-        class Patch4
+        private class Patch4
         {
-            static void Postfix(ResourcePickup __instance)
+            private static void Postfix(ResourcePickup __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterEffect>();
                 wEffect.effectBase = __instance;
@@ -125,19 +131,25 @@ namespace WaterMod
                 wEffect.GetRBody();
             }
         }
-        
     }
 
-    class WaterBuoyancy : MonoBehaviour
+    internal class WaterBuoyancy : MonoBehaviour
     {
         public static Texture2D CameraFilter;
-        public static float Height = -25f, FanJetMultiplier = 2.5f, BulletDampener = 1E-06f, LaserFraction = 0.4f, MissileDampener = 0.016f;
+
+        public static float Height = -25f,
+            FanJetMultiplier = 1.75f,
+            ResourceBuoyancyMultiplier = 1.2f,
+            BulletDampener = 1E-06f,
+            LaserFraction = 0.275f,
+            MissileDampener = 0.011f;
+
         public static int Density = 8;
         public byte heartBeat;
         public static WaterBuoyancy _inst;
         public GameObject folder;
         private bool ShowGUI = false;
-        private Rect Window = new Rect(0, 0, 100, 140);
+        private Rect Window = new Rect(0, 0, 100, 100);
 
         private void OnGUI()
         {
@@ -147,22 +159,22 @@ namespace WaterMod
             }
             if (ShowGUI)
             {
-                Window = GUI.Window(0, Window, GUIWindow, "WaterMod Settings");
+                Window = GUI.Window(0, Window, GUIWindow, "WaterSettings");
             }
         }
+
         private void GUIWindow(int ID)
         {
             GUI.Label(new Rect(0, 20, 100, 20), "Water Height");
             Height = GUI.HorizontalSlider(new Rect(0, 40, 100, 15), Height, -75f, 100f);
-            GUI.Label(new Rect(0, 60, 100, 20), "Water Density");
-            Density = (int)Mathf.Round(GUI.HorizontalSlider(new Rect(0, 80, 100, 15), Density, 1f, 10f));
 
-            if (GUI.Button(new Rect(0, 100, 100, 20), "Save"))
+            if (GUI.Button(new Rect(0, 60, 100, 20), "Save"))
                 QPatch._thisMod.WriteConfigJsonFile();
-            if (GUI.Button(new Rect(0, 120, 100, 20), "Reload"))
+            if (GUI.Button(new Rect(0, 80, 100, 20), "Reload"))
                 ModConfig.ReadConfigJsonFile(QPatch._thisMod);
             GUI.DragWindow();
         }
+
         private void OnTriggerStay(Collider collider)
         {
             var wEffect = collider.GetComponentInParent<WaterEffect>();
@@ -197,6 +209,7 @@ namespace WaterMod
         {
             heartBeat++;
         }
+
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.Slash))
@@ -247,7 +260,24 @@ namespace WaterMod
             WaterBuoyancy._inst.folder = folder;
         }
 
-        //////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        public class TankEffect : MonoBehaviour
+        {
+            public Tank tank;
+            public Vector3 SubmergeAdditivePos;
+            public int SubmergeCount;
+            public Vector3 Dampener;
+
+            public void FixedUpdate()
+            {
+                tank.rbody.AddForceAtPosition(tank.rbody.velocity * -0.001f * Density, SubmergeAdditivePos / SubmergeCount);
+                SubmergeAdditivePos = Vector3.zero;
+                SubmergeCount = 0;
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         public class WaterEffect : MonoBehaviour
         {
@@ -255,8 +285,10 @@ namespace WaterMod
             {
                 heartBeat = 0;
                 isProjectile = false;
+                renderers = this.GetComponentsInChildren<MeshRenderer>(true);
             }
 
+            //public TankEffect watertank;
             public byte heartBeat;
             public EffectTypes effectType;
             public object effectBase;
@@ -265,11 +297,21 @@ namespace WaterMod
             public Vector3 initVelocity;
             public bool isFanJet;
             public MonoBehaviour componentEffect;
+            public MeshRenderer[] renderers;
+            private float Dampness = 0f;
+
 
             public void GetTankBlockRBody()
             {
                 var tankblock = (effectBase as TankBlock);
-                _rbody = tankblock.rbody;
+                if (tankblock.IsAttached)
+                {
+                    _rbody = tankblock.tank.rbody;
+                }
+                else
+                {
+                    _rbody = tankblock.rbody;
+                }
                 if (_rbody == null)
                 {
                     _rbody = tankblock.GetComponent<Rigidbody>();
@@ -279,6 +321,7 @@ namespace WaterMod
                     }
                 }
             }
+
             public void GetRBody()
             {
                 switch (effectType)
@@ -310,26 +353,44 @@ namespace WaterMod
             public void ApplyMultiplierFanJet(TankBlock tankblock)
             {
                 float num2 = (Height - componentEffect.transform.position.y + tankblock.BlockCellBounds.extents.y) / tankblock.BlockCellBounds.extents.y + 0.1f;
+                if (num2 > 0.1f)
                 {
-                    if (num2 < 1f)
+                    if (num2 > 1f)
                     {
                         num2 = 1f;
                     }
                     FanJet component = (componentEffect as FanJet);
-                    if (initVelocity == Vector3.zero) initVelocity = new Vector3(component.force, component.backForce, 0f);
                     component.force = initVelocity.x * (num2 * FanJetMultiplier + 1);
                     component.backForce = initVelocity.y * (num2 * FanJetMultiplier + 1);
                 }
             }
+
             public void ResetMultiplierFanJet()
             {
                 FanJet component = (componentEffect as FanJet);
                 component.force = initVelocity.x;
                 component.backForce = initVelocity.y;
             }
-
+            //public void Update()
+            //{
+            //    foreach(MeshRenderer renderer in renderers)
+            //    {
+            //        try
+            //        {
+            //            renderer.material.SetFloat("_Glossiness", Dampness);
+            //            renderer.material.SetFloat("_Metallic", Dampness);
+            //        }
+            //        catch
+            //        {
+            //        }
+            //    }
+            //    Dampness -= 0.01f;
+            //    if (Dampness < 0f) Dampness = 0f;
+            //}
             public void ApplyForce(byte HeartBeat)
             {
+                Dampness += 0.07f;
+                if (Dampness > 1f) Dampness = 1f;
                 try
                 {
                     if (HeartBeat == heartBeat)
@@ -349,11 +410,12 @@ namespace WaterMod
                         Vector3 thing = (_rbody.velocity.magnitude < 0.8f ? _rbody.velocity : _rbody.velocity.normalized * 0.8f) * -(Density / 8500f);
                         for (int i = 0; i < num; i++)
                         {
+                            Vector3 localpos = new Vector3(intVector[i].x, intVector[i].y, intVector[i].z);
                             Vector3 vector;
                             if (num == 1)
                                 vector = tankblock.centreOfMassWorld;
                             else
-                                vector = transform.TransformPoint(intVector[i].x, intVector[i].y, intVector[i].z);
+                                vector = transform.TransformPoint(localpos);
                             float num2 = Height - vector.y - tankblock.BlockCellBounds.extents.y;
                             num2 = num2 * Mathf.Abs(num2) + 0.25f;
                             if (num2 >= -0.5f)
@@ -372,6 +434,11 @@ namespace WaterMod
                                     yEffector *= 4f;
                                 }
                                 _rbody.AddForceAtPosition(Vector3.up * (num2 * Density * 5f - yEffector), vector);
+                                //if (tankblock.IsAttached)
+                                //{
+                                //    watertank.SubmergeAdditivePos += localpos;
+                                //    watertank.SubmergeCount++;
+                                //}
                             }
                         }
                         _rbody.AddForce(thing);
@@ -379,7 +446,6 @@ namespace WaterMod
                         {
                             ApplyMultiplierFanJet(tankblock);
                         }
-
                     }
                     else
                     {
@@ -388,12 +454,14 @@ namespace WaterMod
                             case EffectTypes.NormalProjectile:
                                 _rbody.velocity *= 1f - (Density * BulletDampener);
                                 break;
+
                             case EffectTypes.MissileProjectile:
                                 _rbody.velocity *= 1f - (Density * MissileDampener);
                                 break;
+
                             case EffectTypes.ResourceChunk:
                                 float num2 = Height - _rbody.position.y;
-                                num2 = num2 * num2;// - 1f;
+                                num2 *= Mathf.Abs(num2);// - 1f;
                                 if (num2 >= -0.5f)
                                 {
                                     if (num2 > 1.5f)
@@ -405,10 +473,11 @@ namespace WaterMod
                                     {
                                         num2 = -0.1f;
                                     }
-                                    _rbody.AddForce(Vector3.up * Density * num2, ForceMode.Force);
+                                    _rbody.AddForce(Vector3.up * Density * num2 * ResourceBuoyancyMultiplier, ForceMode.Force);
                                     _rbody.velocity -= (_rbody.velocity * _rbody.velocity.magnitude * (1f - Density / 10000f)) * 0.0025f;
                                 }
                                 break;
+
                             default:
                                 break;
                         }
@@ -418,38 +487,40 @@ namespace WaterMod
                 {
                     Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString());
                 }
-
             }
 
             public bool ApplyForceEnter(byte HeartBeat)
             {
                 try
                 {
-                    //if (heartBeat == HeartBeat)
-                    //    return false;
-                    //heartBeat = HeartBeat;
-                    switch (effectType)
+                    if (effectType < EffectTypes.LaserProjectile)
                     {
-                        case EffectTypes.MissileProjectile:
-                        case EffectTypes.LaserProjectile:
-                            float destroyMultiplier = 4f;
-                            if (effectType == EffectTypes.MissileProjectile)
-                            {
-                                destroyMultiplier += 1f;
-                                var managedEvent = ((MissileProjectile)this.effectBase).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
-                                if (managedEvent.TimeRemaining != 0) managedEvent.Reset(managedEvent.TimeRemaining * 4f);
-                                //((MissileProjectile)this.effectBase).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
-                                _rbody.useGravity = false;
-                            }
-                            initVelocity = _rbody.velocity;
-                            _rbody.velocity = initVelocity * (1f / (Density * LaserFraction + 1f));
-                            var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
-                            managedEvent2.Reset(managedEvent2.TimeRemaining * destroyMultiplier);
-                            
-                            //(this.effectBase as LaserProjectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
+                        if (effectType == EffectTypes.TankBlock)
+                        {
+                            ((TankBlock)effectBase).GetComponent<MeshRenderer>().material.shader = Shader.Find("Specular");
+                            return true;
+                        }
+                        return false;
+                    }
+                    float destroyMultiplier = 4f;
+                    if (effectType == EffectTypes.MissileProjectile)
+                    {
+                        destroyMultiplier += 1f;
+                        var managedEvent = ((MissileProjectile)this.effectBase).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
+                        if (managedEvent.TimeRemaining != 0) managedEvent.Reset(managedEvent.TimeRemaining * 4f);
+                        //((MissileProjectile)this.effectBase).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
+                        _rbody.useGravity = false;
+                    }
+                    else
+                    {
+                        initVelocity = _rbody.velocity;
+                        _rbody.velocity = initVelocity * (1f / (Density * LaserFraction + 1f));
+                    }
+                    var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
+                    managedEvent2.Reset(managedEvent2.TimeRemaining * destroyMultiplier);
 
-                            break;
-                    };
+                    //(this.effectBase as LaserProjectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
+
                     return true;
                 }
                 catch (Exception e)
@@ -463,41 +534,38 @@ namespace WaterMod
             {
                 try
                 {
-                    switch (effectType)
+                    if (effectType < EffectTypes.LaserProjectile)
                     {
-                        case EffectTypes.MissileProjectile:
-                        case EffectTypes.LaserProjectile:
-                            float destroyMultiplier = 4f;
-                            if (effectType == EffectTypes.MissileProjectile)
-                            {
-                                destroyMultiplier += 1f;
-                                var managedEvent = (this.effectBase as MissileProjectile).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
-                                if (managedEvent.TimeRemaining == 0f)
-                                {
-                                    _rbody.useGravity = true;
-                                }
-                                else
-                                {
-                                    managedEvent.Reset(managedEvent.TimeRemaining * .25f);
-                                }
-                                //(this.effectBase as MissileProjectile).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
-                            }
-                            else
-                            {
-                                _rbody.velocity = initVelocity * (Density * 0.025f * LaserFraction + 1f);
-                            }
-                            var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
-                            managedEvent2.Reset(managedEvent2.TimeRemaining / destroyMultiplier);
-                            //(this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
-
-                            break;
-                        case EffectTypes.TankBlock:
-                            if (isFanJet)
-                            {
-                                ResetMultiplierFanJet();
-                            }
-                            break;
+                        if (effectType == EffectTypes.TankBlock && isFanJet)
+                        {
+                            ResetMultiplierFanJet();
+                            return true;
+                        }
+                        return false;
                     }
+                    float destroyMultiplier = 4f;
+                    if (effectType == EffectTypes.MissileProjectile)
+                    {
+                        destroyMultiplier += 1f;
+                        var managedEvent = (this.effectBase as MissileProjectile).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
+                        if (managedEvent.TimeRemaining == 0f)
+                        {
+                            _rbody.useGravity = true;
+                        }
+                        else
+                        {
+                            managedEvent.Reset(managedEvent.TimeRemaining * .25f);
+                        }
+                        //(this.effectBase as MissileProjectile).SetInstanceField("m_BoosterDeactivationEvent", managedEvent);
+                    }
+                    else
+                    {
+                        _rbody.velocity = initVelocity * (Density * 0.025f * LaserFraction + 1f);
+                    }
+                    var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
+                    managedEvent2.Reset(managedEvent2.TimeRemaining / destroyMultiplier);
+                    //(this.effectBase as Projectile).SetInstanceField("m_TimeoutDestroyEvent", managedEvent2);
+
                     return true;
                 }
                 catch (Exception e)
@@ -507,13 +575,14 @@ namespace WaterMod
                 }
             }
         }
+
         public enum EffectTypes : byte
         {
-            TankBlock = 3,
-            ResourceChunk = 4,
-            LaserProjectile = 1,
-            MissileProjectile = 2,
-            NormalProjectile = 0
+            TankBlock = 0,
+            ResourceChunk = 1,
+            LaserProjectile = 3,
+            MissileProjectile = 4,
+            NormalProjectile = 2
         }
     }
 }

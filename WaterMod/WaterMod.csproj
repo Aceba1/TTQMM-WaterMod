@@ -34,9 +34,8 @@
       <HintPath>..\..\..\HARMONY_RELEASE\net471\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="AcModHelper">
-      <HintPath>..\..\TerraTech-QModManager\Installer\AcModHelper.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="AcModHelper.Config">
+      <HintPath>..\..\TTQMM ModConfigHelper\AcModHelper\bin\ModHelper.Config\AcModHelper.Config.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\TerraTech-QModManager\Dependencies\Assembly-CSharp.dll</HintPath>
@@ -324,7 +323,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>del *.pdb
-del *.xml</PostBuildEvent>
+    <PostBuildEvent>del *.pdb</PostBuildEvent>
   </PropertyGroup>
 </Project>
