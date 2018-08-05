@@ -1,0 +1,16 @@
+C:\VS Projects\ClassLibrary2\ClassLibrary2\obj\Debug\WaterMod.csprojAssemblyReference.cache
+C:\VS Projects\ClassLibrary2\ClassLibrary2\obj\Debug\WaterMod.csproj.CoreCompileInputs.cache
+C:\VS Projects\ClassLibrary2\ClassLibrary2\obj\Debug\ClassLibrary2.dll
+C:\VS Projects\ClassLibrary2\ClassLibrary2\obj\Debug\ClassLibrary2.pdb
+C:\VS Projects\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.csprojAssemblyReference.cache
+C:\VS Projects\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.csproj.CoreCompileInputs.cache
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.csprojAssemblyReference.cache
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.csproj.CoreCompileInputs.cache
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\mod.json
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\WaterMod.dll
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\WaterMod.pdb
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.dll
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.pdb
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\Water Mod\mod.json
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\Water Mod\WaterMod.dll
+C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\Water Mod\WaterMod.pdb

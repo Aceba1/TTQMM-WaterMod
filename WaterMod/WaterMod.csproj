@@ -36,6 +36,7 @@
     </Reference>
     <Reference Include="AcModHelper.Config">
       <HintPath>..\..\TTQMM ModConfigHelper\AcModHelper\bin\ModHelper.Config\AcModHelper.Config.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\TerraTech-QModManager\Dependencies\Assembly-CSharp.dll</HintPath>
