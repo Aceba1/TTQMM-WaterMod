@@ -364,7 +364,7 @@ namespace WaterMod
                 if (SurfaceCount != 0)
                 {
 
-                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceTankDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceTankDampeningYAddition))) * (float)SurfaceCount, SurfaceAdditivePos, ForceMode.Force);
+                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceTankDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceTankDampeningYAddition))) * (float)SurfaceCount, SurfaceAdditivePos/SurfaceCount, ForceMode.Force);
                     SurfaceAdditivePos = Vector3.zero;
                     SurfaceCount = 0;
                 }
