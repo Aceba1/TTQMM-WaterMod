@@ -551,6 +551,10 @@ namespace WaterMod
 
         public class WaterObj : WaterEffect
         {
+            public WaterObj()
+            {
+                set = Height > this.transform.position.y;
+            }
             //public TankEffect watertank;
             public byte heartBeat = 0;
             public EffectTypes effectType;
@@ -558,6 +562,7 @@ namespace WaterMod
             public bool isProjectile = false;
             public Rigidbody _rbody;
             public Vector3 initVelocity;
+            private bool set;
 
             public void GetRBody()
             {
@@ -631,12 +636,19 @@ namespace WaterMod
                 {
                     Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString() + (_rbody == null ? "\nRigidbody is null!" : ""));
                 }
+
             }
 
             public override void Ent(byte HeartBeat)
             {
-                if (heartBeat != 0)
-                WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, 0.5f);
+                if (set)
+                {
+                    WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, -0.25f);
+                }
+                else
+                {
+                    set = true;
+                }
                 try
                 {
                     if (effectType < EffectTypes.LaserProjectile)
@@ -669,11 +681,16 @@ namespace WaterMod
                     Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString() + (_rbody == null ? "\nRigidbody is null!" : ""));
                     return;
                 }
+                
             }
 
             public override void Ext(byte HeartBeat)
             {
-                WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, 0.5f);
+                if (!set)
+                {
+                    set = true;
+                }
+                WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, -0.25f);
                 try
                 {
                     if (effectType < EffectTypes.LaserProjectile)
