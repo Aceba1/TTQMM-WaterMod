@@ -30,6 +30,8 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceSkinning");
             thisMod.BindConfig<WaterBuoyancy>(null, "TankDampening");
             thisMod.BindConfig<WaterBuoyancy>(null, "TankDampeningYAddition");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceDampening");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceDampeningYAddition");
             _thisMod = thisMod;
         }
     }
@@ -157,8 +159,10 @@ namespace WaterMod
             LaserFraction = 0.275f,
             MissileDampener = 0.011f,
             SurfaceSkinning = 0.75f,
-            TankDampening = 0.3f,
-            TankDampeningYAddition = 0.2f;
+            TankDampening = 0.2f,
+            TankDampeningYAddition = 0f,
+            SurfaceDampening = 0.1f,
+            SurfaceDampeningYAddition = 1f;
 
         public static int Density = 8;
         public byte heartBeat;
@@ -314,7 +318,8 @@ namespace WaterMod
             public Tank tank;
             public Vector3 SubmergeAdditivePos = Vector3.zero;
             public int SubmergeCount = 0;
-            public Vector3 Dampener = Vector3.zero;
+            public Vector3 SurfaceAdditivePos = Vector3.zero;
+            public int SurfaceCount = 0;
 
             public void Subscribe(Tank tank)
             {
@@ -327,6 +332,12 @@ namespace WaterMod
             {
                 SubmergeAdditivePos += position;
                 SubmergeCount++;
+            }
+
+            public void AddSurface(Vector3 position)
+            {
+                SurfaceAdditivePos += position;
+                SurfaceCount++;
             }
 
             public void AddBlock(TankBlock tankblock, Tank tank)
@@ -347,6 +358,13 @@ namespace WaterMod
                     SubmergeAdditivePos = Vector3.zero;
                     tank.rbody.AddForce(-(tank.rbody.velocity * TankDampening + (Vector3.up * (tank.rbody.velocity.y * TankDampeningYAddition))) * (float)SubmergeCount, ForceMode.Force);
                     SubmergeCount = 0;
+                }
+                if (SurfaceCount != 0)
+                {
+
+                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceDampeningYAddition))) * (float)SubmergeCount, SubmergeAdditivePos, ForceMode.Force);
+                    SurfaceAdditivePos = Vector3.zero;
+                    SurfaceCount = 0;
                 }
             }
         }
