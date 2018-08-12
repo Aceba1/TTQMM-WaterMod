@@ -149,11 +149,6 @@ namespace WaterMod
             v.enabled = true;
             v.y = 0.25f;
 
-            var i = ps.inheritVelocity;
-            i.enabled = true;
-            i.mode = ParticleSystemInheritVelocityMode.Initial;
-            i.curveMultiplier = 0.25f;
-
             var r = ps.GetComponent<ParticleSystemRenderer>();
             r.renderMode = ParticleSystemRenderMode.HorizontalBillboard;
             r.material = blurredMat;
