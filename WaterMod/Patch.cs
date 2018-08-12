@@ -157,11 +157,11 @@ namespace WaterMod
             ResourceBuoyancyMultiplier = 1.2f,
             BulletDampener = 1E-06f,
             LaserFraction = 0.275f,
-            MissileDampener = 0.011f,
-            SurfaceSkinning = 0.75f,
-            SubmergedTankDampening = 0.2f,
+            MissileDampener = 0.012f,
+            SurfaceSkinning = 1f,
+            SubmergedTankDampening = 0.4f,
             SubmergedTankDampeningYAddition = 0f,
-            SurfaceTankDampening = 0.1f,
+            SurfaceTankDampening = 0f,
             SurfaceTankDampeningYAddition = 1f;
 
         public static int Density = 8;
