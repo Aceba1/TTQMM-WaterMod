@@ -635,6 +635,7 @@ namespace WaterMod
 
             public override void Ent(byte HeartBeat)
             {
+                if (heartBeat != 0)
                 WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, 0.5f);
                 try
                 {
