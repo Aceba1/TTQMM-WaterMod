@@ -60,8 +60,10 @@ namespace WaterMod
             var shader = Shader.Find("Particles/Additive");
             spriteMaterial = new Material(shader);
 
-            blurredMat = new Material(shader);
-            blurredMat.mainTexture = blurredSprite;
+            blurredMat = new Material(shader)
+            {
+                mainTexture = blurredSprite
+            };
         }
         private static void CreateBlurredSprite()
         {
@@ -159,12 +161,14 @@ namespace WaterMod
 
         public static void SplashAtPos(Vector3 pos, float Speed, float radius)
         {
-            var emitparams = new ParticleSystem.EmitParams();
-            emitparams.position = pos;
             float sp = Mathf.Clamp(Mathf.Abs(Speed) * 0.25f, 0.1f, 8f);
             float sqp = Mathf.Sqrt(sp);
-            emitparams.startLifetime = 0.1f + sqp * 0.4f;
-            emitparams.startSize3D = new Vector3(sqp + radius, sp, 1f);
+            var emitparams = new ParticleSystem.EmitParams
+            {
+                position = pos,
+                startLifetime = 0.1f + sqp * 0.4f,
+                startSize3D = new Vector3(sqp + radius, sp, 1f)
+            };
             FXSplash.Emit(emitparams, 1);
         }
     }

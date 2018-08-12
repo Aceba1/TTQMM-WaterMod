@@ -28,10 +28,10 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "MissileDampener");
             thisMod.BindConfig<WaterBuoyancy>(null, "LaserFraction");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceSkinning");
-            thisMod.BindConfig<WaterBuoyancy>(null, "TankDampening");
-            thisMod.BindConfig<WaterBuoyancy>(null, "TankDampeningYAddition");
-            thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceDampening");
-            thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceDampeningYAddition");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SubmergedTankDampening");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SubmergedTankDampeningYAddition");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampening");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampeningYAddition");
             _thisMod = thisMod;
         }
     }
@@ -159,10 +159,10 @@ namespace WaterMod
             LaserFraction = 0.275f,
             MissileDampener = 0.011f,
             SurfaceSkinning = 0.75f,
-            TankDampening = 0.2f,
-            TankDampeningYAddition = 0f,
-            SurfaceDampening = 0.1f,
-            SurfaceDampeningYAddition = 1f;
+            SubmergedTankDampening = 0.2f,
+            SubmergedTankDampeningYAddition = 0f,
+            SurfaceTankDampening = 0.1f,
+            SurfaceTankDampeningYAddition = 1f;
 
         public static int Density = 8;
         public byte heartBeat;
@@ -257,11 +257,13 @@ namespace WaterMod
                 }
                 CameraFilter.Apply();
 
-                Material material = new Material(Shader.Find("Standard"));
-                material.color = new Color(0.2f, 1f, 1f, 0.45f);
+                Material material = new Material(Shader.Find("Standard"))
+                {
+                    color = new Color(0.2f, 1f, 1f, 0.45f),
+                    renderQueue = 3000
+                };
                 material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.8f); material.SetFloat("_Glossiness", 0.8f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
                 material.DisableKeyword("_ALPHATEST_ON"); material.EnableKeyword("_ALPHABLEND_ON"); material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                material.renderQueue = 3000;
 
                 var folder = new GameObject("WaterObject");
                 folder.transform.position = Vector3.zero;
@@ -356,13 +358,13 @@ namespace WaterMod
                 {
                     tank.rbody.AddForceAtPosition(Vector3.up * (Density * 7.5f) * SubmergeCount, SubmergeAdditivePos / SubmergeCount);
                     SubmergeAdditivePos = Vector3.zero;
-                    tank.rbody.AddForce(-(tank.rbody.velocity * TankDampening + (Vector3.up * (tank.rbody.velocity.y * TankDampeningYAddition))) * (float)SubmergeCount, ForceMode.Force);
+                    tank.rbody.AddForce(-(tank.rbody.velocity * SubmergedTankDampening + (Vector3.up * (tank.rbody.velocity.y * SubmergedTankDampeningYAddition))) * (float)SubmergeCount, ForceMode.Force);
                     SubmergeCount = 0;
                 }
                 if (SurfaceCount != 0)
                 {
 
-                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceDampeningYAddition))) * (float)SubmergeCount, SubmergeAdditivePos, ForceMode.Force);
+                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceTankDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceTankDampeningYAddition))) * (float)SurfaceCount, SurfaceAdditivePos, ForceMode.Force);
                     SurfaceAdditivePos = Vector3.zero;
                     SurfaceCount = 0;
                 }
