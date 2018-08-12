@@ -380,7 +380,6 @@ namespace WaterMod
             public MonoBehaviour componentEffect;
             public Vector3 initVelocity;
             public GameObject surface;
-            bool InSurfaceRange;
             byte heartBeat = 0;
             public TankBlock TankBlock;
 
@@ -394,7 +393,6 @@ namespace WaterMod
                 }
                 var e = TankBlock.centreOfMassWorld;
                 surface.transform.position = new Vector3(e.x, Height, e.z);
-                InSurfaceRange = true;
             }
             private void TryRemoveSurface()
             {
@@ -428,14 +426,6 @@ namespace WaterMod
                 FanJet component = (componentEffect as FanJet);
                 component.force = initVelocity.x;
                 component.backForce = initVelocity.y;
-            }
-
-            public void FixedUpdate()
-            {
-                if (InSurfaceRange == false)
-                    TryRemoveSurface();
-                else
-                    InSurfaceRange = false;
             }
 
             public override void Stay(byte HeartBeat)
@@ -478,6 +468,7 @@ namespace WaterMod
                 Submerge = Submerge * Mathf.Abs(Submerge) + SurfaceSkinning;
                 if (Submerge > 1.5f)
                 {
+                    TryRemoveSurface();
                     Submerge = 1.5f;
                 }
                 else if (Submerge < -0.1f)
@@ -487,6 +478,7 @@ namespace WaterMod
                 else
                 {
                     Surface();
+                    
                 }
                 TankBlock.rbody.AddForceAtPosition(Vector3.up * (Submerge * Density * 5f), vector);
             }
@@ -511,6 +503,7 @@ namespace WaterMod
                         if (Submerge > 1.5f)
                         {
                             watertank.AddGeneralBuoyancy(vector);
+                            TryRemoveSurface();
                             continue;
                         }
                         else if (Submerge < -0.1f)
@@ -520,6 +513,7 @@ namespace WaterMod
                         else
                         {
                             Surface();
+                            watertank.AddSurface(vector);
                         }
                         _rbody.AddForceAtPosition(Vector3.up * (Submerge * Density * 5f), vector);
                     }
@@ -531,6 +525,7 @@ namespace WaterMod
             }
             public override void Ent(byte HeartBeat)
             {
+                Surface();
                 try
                 {
                     var val = TankBlock.centreOfMassWorld;
@@ -540,6 +535,7 @@ namespace WaterMod
             }
             public override void Ext(byte HeartBeat)
             {
+                TryRemoveSurface();
                 try
                 {
                     if (isFanJet)
