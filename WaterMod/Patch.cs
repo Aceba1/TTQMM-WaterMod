@@ -551,17 +551,11 @@ namespace WaterMod
 
         public class WaterObj : WaterEffect
         {
-            public WaterObj()
-            {
-                heartBeat = 0;
-                isProjectile = false;
-            }
-
             //public TankEffect watertank;
-            public byte heartBeat;
+            public byte heartBeat = 0;
             public EffectTypes effectType;
             public Component effectBase;
-            public bool isProjectile;
+            public bool isProjectile = false;
             public Rigidbody _rbody;
             public Vector3 initVelocity;
 
