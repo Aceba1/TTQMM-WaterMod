@@ -10,6 +10,11 @@ namespace WaterMod
 {
     public class QPatch
     {
+        public static float WaterHeight
+        {
+            get => WaterBuoyancy.HeightCalc;
+        }
+
         public static ModConfig _thisMod;
 
         public static void Main()
@@ -17,9 +22,13 @@ namespace WaterMod
             var harmony = HarmonyInstance.Create("aceba1.ttmm.revived.water");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
+            ModConfig thisMod = new ModConfig();
+
+            thisMod.BindConfig<WaterParticleHandler>(null, "UseParticleEffects");
+            thisMod.BindConfig<SurfacePool>(null, "SurfaceEffectStartPoolSize");
+
             WaterBuoyancy.Initiate();
 
-            ModConfig thisMod = new ModConfig();
             thisMod.BindConfig<WaterBuoyancy>(null, "Height");
             thisMod.BindConfig<WaterBuoyancy>(null, "Density");
             thisMod.BindConfig<WaterBuoyancy>(null, "FanJetMultiplier");
@@ -32,15 +41,51 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "SubmergedTankDampeningYAddition");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampening");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampeningYAddition");
+            thisMod.BindConfig<Patches>(null, "debugUtil");
+            WaterBuoyancy.WeatherMod = WaterBuoyancy.WeatherExists();
+            if (WaterBuoyancy.WeatherMod)
+            {
+                Debug.Log("Found WeatherMod!");
+                thisMod.BindConfig<WaterBuoyancy>(null, "RainWeightMultiplier");
+                thisMod.BindConfig<WaterBuoyancy>(null, "RainDrainMultiplier");
+                thisMod.BindConfig<WaterBuoyancy>(null, "FloodChangeClamp");
+                thisMod.BindConfig<WaterBuoyancy>(null, "FloodHeightMultiplier");
+            }
+
             _thisMod = thisMod;
         }
     }
 
     internal class Patches
     {
+        public struct DebugUtil
+        {
+            public DebugUtil(bool TotalDebug)
+            {
+                LogLaserSpawn = TotalDebug;
+                LogMissileSpawn = TotalDebug;
+                LogMissileEnter = TotalDebug;
+                LogLaserEnter = TotalDebug;
+                LogMissileLeave = TotalDebug;
+                LogLaserLeave = TotalDebug;
+                LogBlockLayers = TotalDebug;
+                LogEveryLayer = TotalDebug;
+            }
+            public bool LogLaserSpawn,
+                LogMissileSpawn,
+                LogMissileEnter,
+                LogLaserEnter,
+                LogMissileLeave,
+                LogLaserLeave,
+                LogBlockLayers,
+                LogEveryLayer;
+        }
+
+        public static DebugUtil debugUtil = new DebugUtil(false);
+
         [HarmonyPatch(typeof(TankBlock))]
         [HarmonyPatch("OnSpawn")]
-        private class Patch1
+        private class PatchBlock
         {
             private static void Postfix(TankBlock __instance)
             {
@@ -56,12 +101,26 @@ namespace WaterMod
                         wEffect.initVelocity = new Vector3(component.force, component.backForce, 0f);
                     }
                 }
+                if (debugUtil.LogBlockLayers)
+                {
+                    Debug.Log("Block " + __instance.name + " is on layer " + LayerMask.LayerToName(__instance.gameObject.layer));
+                    if (debugUtil.LogEveryLayer)
+                    {
+                        debugUtil.LogEveryLayer = false;
+                        string layers = "Layers:";
+                        for (int i = 0; i <= 31; i++)
+                        {
+                            layers += "\n(" + i.ToString() + ") " + LayerMask.LayerToName(i);
+                        }
+                        Debug.Log(layers);
+                    }
+                }
             }
         }
 
         [HarmonyPatch(typeof(Tank))]
         [HarmonyPatch("OnSpawn")]
-        private class Patch5
+        private class PatchTank
         {
             private static void Postfix(Tank __instance)
             {
@@ -69,74 +128,74 @@ namespace WaterMod
                 wEffect.Subscribe(__instance);
             }
         }
-
-        //[HarmonyPatch(typeof(TankBlock))]
-        //[HarmonyPatch("OnAttach")]
-        //private class Patch1_1
-        //{
-        //    private static void Postfix(TankBlock __instance)
-        //    {
-        //        var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterEffect>();
-        //        wEffect.watertank = __instance.tank.GetComponent<WaterBuoyancy.TankEffect>();
-        //    }
-        //}
-
-        //         [HarmonyPatch(typeof(TankBlock))]
-        //         [HarmonyPatch("OnDetach")]
-        //         class Patch1_2
-        //         {
-        //             static void Postfix(TankBlock __instance)
-        //             {
-        //                 var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterEffect>();
-        //                 if (wEffect != null)
-        //                     wEffect.GetTankBlockRBody();
-        //             }
-        //         }
-
-        [HarmonyPatch(typeof(LaserProjectile))]
+        [HarmonyPatch(typeof(MissileProjectile))]
         [HarmonyPatch("OnSpawn")]
-        private class Patch2
+        private class PatchMissile
         {
-            private static void Postfix(LaserProjectile __instance)
+            private static void Postfix(Projectile __instance)
             {
-                var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
-                if (wEffect != null && wEffect.effectType < WaterBuoyancy.EffectTypes.NormalProjectile)
-                    return;
-                wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-                wEffect.effectBase = __instance;
-                wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
-                wEffect.GetRBody();
+                if (debugUtil.LogMissileSpawn)
+                {
+                    Debug.Log("Missile spawned (?) : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                }
+                var wEffect2 = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
+                if (wEffect2 == null)
+                    wEffect2 = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
+                wEffect2.effectBase = __instance;
+                wEffect2.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
+                wEffect2.GetRBody();
+                if (debugUtil.LogMissileSpawn)
+                {
+                    Debug.Log("Missile spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                }
             }
         }
 
         [HarmonyPatch(typeof(Projectile))]
         [HarmonyPatch("OnSpawn")]
-        private class Patch3
+        private class PatchProjectile
         {
             private static void Postfix(Projectile __instance)
             {
-                var __minstance = __instance.GetComponent<MissileProjectile>();
-                if (__minstance != null)
-                {
-                    Collider collider = __minstance.GetComponentInChildren<Collider>();
-                    var wEffect2 = collider.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-                    wEffect2.effectBase = __minstance;
-                    wEffect2.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
-                    wEffect2.GetRBody();
-                }
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
-                if (wEffect != null)
+                if (wEffect == null)
+                {
+                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
+                }
+                else if (wEffect.effectType <= WaterBuoyancy.EffectTypes.NormalProjectile)
                     return;
-                wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.NormalProjectile;
                 wEffect.GetRBody();
             }
         }
 
+        [HarmonyPatch(typeof(LaserProjectile))]
+        [HarmonyPatch("OnSpawn")]
+        private class PatchLaser
+        {
+            private static void Postfix(Projectile __instance)
+            {
+                var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
+                if (wEffect == null)
+                {
+                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
+                }
+                else if (wEffect.effectType <= WaterBuoyancy.EffectTypes.LaserProjectile)
+                    return;
+                wEffect.effectBase = __instance;
+                wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
+                wEffect.GetRBody();
+                if (debugUtil.LogLaserSpawn)
+                {
+                    Debug.Log("Laser spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(ResourcePickup))]
         [HarmonyPatch("OnSpawn")]
-        private class Patch4
+        private class PatchResource
         {
             private static void Postfix(ResourcePickup __instance)
             {
@@ -150,6 +209,7 @@ namespace WaterMod
 
     internal class WaterBuoyancy : MonoBehaviour
     {
+
         public static Texture2D CameraFilter;
 
         public static float Height = -25f,
@@ -162,14 +222,24 @@ namespace WaterMod
             SubmergedTankDampening = 0.4f,
             SubmergedTankDampeningYAddition = 0f,
             SurfaceTankDampening = 0f,
-            SurfaceTankDampeningYAddition = 1f;
+            SurfaceTankDampeningYAddition = 1f,
+            RainWeightMultiplier = 0.001f,
+            RainDrainMultiplier = 0.001f,
+            FloodChangeClamp = 0.00003f,
+            FloodHeightMultiplier = 15f;
 
+        public static float HeightCalc
+        {
+            get => Height + (RainFlood * FloodHeightMultiplier);
+        }
+        public static float RainFlood = 0f;
         public static int Density = 8;
         public byte heartBeat;
         public static WaterBuoyancy _inst;
-        public GameObject folder;
+        public static GameObject folder;
         private bool ShowGUI = false;
         private Rect Window = new Rect(0, 0, 100, 100);
+        public static bool WeatherMod;
 
         private void OnGUI()
         {
@@ -236,7 +306,14 @@ namespace WaterMod
             {
                 ShowGUI = !ShowGUI;
             }
-            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, Height, Singleton.camera.transform.position.z);
+            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
+            if (WeatherMod)
+            {
+                float newHeight = RainFlood;
+                newHeight += WeatherModIntegration.RainWeight * RainWeightMultiplier;
+                newHeight *= 1f - RainDrainMultiplier;
+                RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp, FloodChangeClamp);
+            }
         }
 
         public static void Initiate()
@@ -268,20 +345,36 @@ namespace WaterMod
                 var folder = new GameObject("WaterObject");
                 folder.transform.position = Vector3.zero;
 
-                GameObject gameObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                Destroy(gameObject.GetComponent<CapsuleCollider>());
-                Transform component = gameObject.GetComponent<Transform>(); component.SetParent(folder.transform);
-                component.localScale = new Vector3(2048f, 0.075f, 2048f); component.localPosition = new Vector3(0f, 0f, 0f);
-                gameObject.GetComponent<Renderer>().material = material;
+                GameObject Surface = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                Destroy(Surface.GetComponent<CapsuleCollider>());
+                Transform component = Surface.transform; component.parent = folder.transform;
+                component.localScale = new Vector3(2048f, 0.075f, 2048f);
+                Surface.GetComponent<Renderer>().material = material;
 
-                GameObject gameObject2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                Destroy(gameObject2.GetComponent<Renderer>());
-                Transform component2 = gameObject2.GetComponent<Transform>(); component2.SetParent(folder.transform);
-                component2.localScale = new Vector3(2048f, 1024f, 2048f); component2.localPosition = new Vector3(0f, -512f, 0f);
-                gameObject2.GetComponent<BoxCollider>().isTrigger = true;
+                GameObject PhysicsTrigger = new GameObject("Physics");
+                Transform PhysicsTriggerTransform = PhysicsTrigger.transform; PhysicsTriggerTransform.parent = folder.transform;
+                PhysicsTriggerTransform.localScale = new Vector3(2048f, 2048f, 2048f); PhysicsTriggerTransform.localPosition = new Vector3(0f, -1024f, 0f);
+                PhysicsTrigger.AddComponent<BoxCollider>().isTrigger = true;
 
-                WaterBuoyancy._inst = gameObject2.AddComponent<WaterBuoyancy>();
-                WaterBuoyancy._inst.folder = folder;
+                _inst = PhysicsTrigger.AddComponent<WaterBuoyancy>();
+
+                int waterlayer = LayerMask.NameToLayer("Water");
+                for (int i = 0; i < 32; i++)
+                {
+                    if (i != waterlayer)
+                    {
+                        Physics.IgnoreLayerCollision(waterlayer, i, true);
+                    }
+                }
+
+                GameObject PhysicsCollider = new GameObject("Physics");
+                PhysicsCollider.layer = waterlayer;
+                Transform PhysicsColliderTransform = PhysicsCollider.transform; PhysicsColliderTransform.parent = folder.transform;
+                PhysicsColliderTransform.localScale = new Vector3(2048f, 2048f, 2048f); PhysicsColliderTransform.localPosition = new Vector3(0f, -1024f, 0f);
+                PhysicsCollider.AddComponent<BoxCollider>();
+                
+                WaterBuoyancy.folder = folder;
+
             }
             catch (Exception e)
             {
@@ -290,11 +383,24 @@ namespace WaterMod
             try
             {
                 WaterParticleHandler.Initialize();
+                SurfacePool.Initiate();
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
             }
+        }
+
+        public static bool WeatherExists()
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly.FullName.StartsWith("TTQMM WeatherMod"))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public class WaterEffect : MonoBehaviour
@@ -326,7 +432,7 @@ namespace WaterMod
             public void Subscribe(Tank tank)
             {
                 tank.AttachEvent.Subscribe(AddBlock);
-                tank.AttachEvent.Subscribe(RemoveBlock);
+                tank.DetachEvent.Subscribe(RemoveBlock);
                 this.tank = tank;
             }
 
@@ -364,7 +470,7 @@ namespace WaterMod
                 if (SurfaceCount != 0)
                 {
 
-                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceTankDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceTankDampeningYAddition))) * (float)SurfaceCount, SurfaceAdditivePos/SurfaceCount, ForceMode.Force);
+                    tank.rbody.AddForceAtPosition(-(tank.rbody.velocity * SurfaceTankDampening + (Vector3.up * (tank.rbody.velocity.y * SurfaceTankDampeningYAddition))) * (float)SurfaceCount, SurfaceAdditivePos/SurfaceCount);
                     SurfaceAdditivePos = Vector3.zero;
                     SurfaceCount = 0;
                 }
@@ -379,36 +485,47 @@ namespace WaterMod
             public bool isFanJet;
             public MonoBehaviour componentEffect;
             public Vector3 initVelocity;
-            public GameObject surface;
+            public GameObject surface = null;
             byte heartBeat = 0;
             public TankBlock TankBlock;
-
+            sbyte sLife = 0;
             private void Surface()
             {
-                if (surface == null)
+                if (WaterParticleHandler.UseParticleEffects)
                 {
-                    surface = GameObject.Instantiate(WaterParticleHandler.oSurface);
-                    surface.transform.parent = TankBlock.trans;
-                    surface.GetComponent<ParticleSystem>().Play();
+                    if (surface == null)
+                    {
+                        surface = SurfacePool.GetFromPool();
+                    }
+                    var e = TankBlock.centreOfMassWorld;
+                    surface.transform.position = new Vector3(e.x, HeightCalc, e.z);
+                    sLife = 8;
                 }
-                var e = TankBlock.centreOfMassWorld;
-                surface.transform.position = new Vector3(e.x, Height, e.z);
             }
             private void TryRemoveSurface()
             {
                 if (surface != null)
                 {
-                    surface.GetComponent<ParticleSystem>().Stop();
-                    GameObject.Destroy(surface, 2.5f);
+                    SurfacePool.ReturnToPool(surface, 2.5f);
                     surface = null;
                 }
             }
 
+            private void Update()
+            {
+                if (surface != null)
+                {
+                    if (sLife <= 0)
+                        TryRemoveSurface();
+                    else
+                        sLife--;
+                }
+            }
             
 
             public void ApplyMultiplierFanJet()
             {
-                float num2 = (Height - componentEffect.transform.position.y + TankBlock.BlockCellBounds.extents.y) / TankBlock.BlockCellBounds.extents.y + 0.1f;
+                float num2 = (HeightCalc - componentEffect.transform.position.y + TankBlock.BlockCellBounds.extents.y) / TankBlock.BlockCellBounds.extents.y + 0.1f;
                 if (num2 > 0.1f)
                 {
                     if (num2 > 1f)
@@ -437,99 +554,103 @@ namespace WaterMod
                 {
                     if (TankBlock.rbody == null)
                     {
-                        if (watertank == null || watertank.tank != TankBlock.tank)
+                        if (TankBlock.tank != null)
                         {
-                            watertank = TankBlock.tank.GetComponent<WaterTank>();
+                            if (watertank == null || watertank.tank != TankBlock.tank)
+                            {
+                                watertank = TankBlock.tank.GetComponent<WaterTank>();
+                            }
+                            ApplyConnectedForce();
+                            return;
                         }
-                        ApplyConnectedForce();
-                        return;
+                        else
+                        {
+                            sLife = 0;
+                        }
+                    }
+                    else
+                    {
+                        ApplySeparateForce();
                     }
                 }
-                catch (Exception ee)
+                catch
                 {
-                    Debug.LogException(ee);
-                    Debug.Log(watertank == null ? "WaterTank is null..."+ (TankBlock.tank == null ? " And so is the tank" : "The tank is not") : "WaterTank exists");
-                }
-                try
-                {
-                    ApplySeparateForce();
-                }
-                catch(Exception ee)
-                {
-                    Debug.LogException(ee);
-                    Debug.Log(TankBlock.rbody == null ? "TankBlock Rigidbody is null" : "What?");
+                    Debug.Log((watertank == null ? "WaterTank is null..."+ (TankBlock.tank == null ? " And so is the tank" : "The tank is not") : "WaterTank exists") + (TankBlock.rbody == null ? "\nTankBlock Rigidbody is null" : "\nWhat?") + (TankBlock.IsAttached?"\nThe block appears to be attached":"\nThe block is not attached"));
                 }
             }
 
             public void ApplySeparateForce()
             {
                 Vector3 vector = TankBlock.centreOfMassWorld;
-                float Submerge = Height - TankBlock.centreOfMassWorld.y - TankBlock.BlockCellBounds.extents.y;
+                float Submerge = HeightCalc - TankBlock.centreOfMassWorld.y - TankBlock.BlockCellBounds.extents.y;
                 Submerge = Submerge * Mathf.Abs(Submerge) + SurfaceSkinning;
                 if (Submerge > 1.5f)
                 {
                     TryRemoveSurface();
                     Submerge = 1.5f;
                 }
-                else if (Submerge < -0.1f)
+                else if (Submerge < -0.2f)
                 {
-                    Submerge = -0.1f;
+
+                    Submerge = -0.2f;
                 }
                 else
                 {
                     Surface();
-                    
                 }
                 TankBlock.rbody.AddForceAtPosition(Vector3.up * (Submerge * Density * 5f), vector);
             }
 
             public void ApplyConnectedForce()
             {
-                Rigidbody _rbody = watertank.tank.rbody;
                 IntVector3[] intVector = TankBlock.filledCells;
                 int CellCount = intVector.Length;
                 if (CellCount == 1)
                 {
-                    intVector[0] = TankBlock.CentreOfMass;
+                    ApplyConnectedForce_Internal(TankBlock.centreOfMassWorld);
+                }
+                else for (int CellIndex = 0; CellIndex < CellCount; CellIndex++)
+                {
+                    ApplyConnectedForce_Internal(transform.TransformPoint(intVector[CellIndex].x, intVector[CellIndex].y, intVector[CellIndex].z));
                 }
 
-                for (int CellIndex = 0; CellIndex < CellCount; CellIndex++)
-                {
-                    Vector3 vector = transform.TransformPoint(intVector[CellIndex].x, intVector[CellIndex].y, intVector[CellIndex].z);
-                    float Submerge = Height - vector.y - TankBlock.BlockCellBounds.extents.y;
-                    Submerge = Submerge * Mathf.Abs(Submerge) + SurfaceSkinning;
-                    if (Submerge >= -0.5f)
-                    {
-                        if (Submerge > 1.5f)
-                        {
-                            watertank.AddGeneralBuoyancy(vector);
-                            TryRemoveSurface();
-                            continue;
-                        }
-                        else if (Submerge < -0.1f)
-                        {
-                            Submerge = -0.1f;
-                        }
-                        else
-                        {
-                            Surface();
-                            watertank.AddSurface(vector);
-                        }
-                        _rbody.AddForceAtPosition(Vector3.up * (Submerge * Density * 5f), vector);
-                    }
-                }
                 if (this.isFanJet)
                 {
                     ApplyMultiplierFanJet();
                 }
             }
+            private void ApplyConnectedForce_Internal(Vector3 vector)
+            {
+                float Submerge = HeightCalc - vector.y - TankBlock.BlockCellBounds.extents.y;
+                Submerge = Submerge * Mathf.Abs(Submerge) + SurfaceSkinning;
+                if (Submerge >= -0.5f)
+                {
+                    if (Submerge > 1.5f)
+                    {
+                        watertank.AddGeneralBuoyancy(vector);
+                        TryRemoveSurface();
+                        return;
+                    }
+                    else if (Submerge < -0.2f)
+                    {
+                        Submerge = -0.2f;
+                    }
+                    else
+                    {
+                        Surface();
+                        watertank.AddSurface(vector);
+                    }
+                    watertank.tank.rbody.AddForceAtPosition(Vector3.up * (Submerge * Density * 5f), vector);
+                }
+            }
+
             public override void Ent(byte HeartBeat)
             {
                 Surface();
                 try
                 {
                     var val = TankBlock.centreOfMassWorld;
-                    WaterParticleHandler.SplashAtPos(new Vector3(val.x, Height, val.z), (TankBlock.tank != null ? watertank.tank.rbody.GetPointVelocity(val).y : TankBlock.rbody.velocity.y), TankBlock.BlockCellBounds.extents.magnitude);
+                    WaterParticleHandler.SplashAtPos(new Vector3(val.x, HeightCalc, val.z), (TankBlock.tank != null ? watertank.tank.rbody.GetPointVelocity(val).y : TankBlock.rbody.velocity.y), TankBlock.BlockCellBounds.extents.magnitude);
                 }
                 catch { }
             }
@@ -541,7 +662,7 @@ namespace WaterMod
                     if (isFanJet)
                         ResetMultiplierFanJet();
                     var val = TankBlock.centreOfMassWorld;
-                    WaterParticleHandler.SplashAtPos(new Vector3(val.x, Height, val.z), (TankBlock.tank != null ? watertank.tank.rbody.GetPointVelocity(val).y : TankBlock.rbody.velocity.y), TankBlock.BlockCellBounds.extents.magnitude);
+                    WaterParticleHandler.SplashAtPos(new Vector3(val.x, HeightCalc, val.z), (TankBlock.tank != null ? watertank.tank.rbody.GetPointVelocity(val).y : TankBlock.rbody.velocity.y), TankBlock.BlockCellBounds.extents.magnitude);
                 }
                 catch { }
             }
@@ -553,7 +674,7 @@ namespace WaterMod
         {
             public WaterObj()
             {
-                set = Height > this.transform.position.y;
+                set = HeightCalc > this.transform.position.y;
             }
             //public TankEffect watertank;
             public byte heartBeat = 0;
@@ -609,7 +730,7 @@ namespace WaterMod
                                 break;
 
                             case EffectTypes.ResourceChunk:
-                                float num2 = Height - _rbody.position.y;
+                                float num2 = HeightCalc - _rbody.position.y;
                                 num2 =num2 * Mathf.Abs(num2) + SurfaceSkinning;
                                 if (num2 >= -0.5f)
                                 {
@@ -634,23 +755,28 @@ namespace WaterMod
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString() + (_rbody == null ? "\nRigidbody is null!" : ""));
+                    bool flag = _rbody == null;
+                    Debug.Log("Exception in Stay: " + e.Message + "\n efectType: " + effectType.ToString() + (flag ? "\nRigidbody is null!" : ""));
+                    if (flag)
+                    {
+                        GetRBody();
+                    }
                 }
 
             }
 
             public override void Ent(byte HeartBeat)
             {
-                if (set)
+                try
                 {
-                    WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, -0.25f);
+                    if (set)
+                {
+                    WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, HeightCalc, effectBase.transform.position.z), _rbody.velocity.y, -0.25f);
                 }
                 else
                 {
                     set = true;
                 }
-                try
-                {
                     if (effectType < EffectTypes.LaserProjectile)
                     {
                         return;
@@ -658,6 +784,10 @@ namespace WaterMod
                     float destroyMultiplier = 4f;
                     if (effectType == EffectTypes.MissileProjectile)
                     {
+                        if (Patches.debugUtil.LogMissileEnter)
+                        {
+                            Debug.Log("Missile enter : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                        }
                         destroyMultiplier += 1f;
                         var managedEvent = ((MissileProjectile)this.effectBase).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
                         if (managedEvent.TimeRemaining != 0) managedEvent.Reset(managedEvent.TimeRemaining * 4f);
@@ -666,6 +796,10 @@ namespace WaterMod
                     }
                     else
                     {
+                        if (Patches.debugUtil.LogLaserEnter)
+                        {
+                            Debug.Log("Laser enter : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                        }
                         initVelocity = _rbody.velocity;
                         _rbody.velocity = initVelocity * (1f / (Density * LaserFraction + 1f));
                     }
@@ -678,21 +812,26 @@ namespace WaterMod
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString() + (_rbody == null ? "\nRigidbody is null!" : ""));
-                    return;
+                    bool flag = _rbody == null;
+                    Debug.Log("Exception in Ent: " + e.Message + "\n efectType: " + effectType.ToString() + (flag ? "\nRigidbody is null!" : ""));
+                    if (flag)
+                    {
+                        GetRBody();
+                    }
                 }
                 
             }
 
             public override void Ext(byte HeartBeat)
             {
-                if (!set)
+                try
+                {
+                    if (!set)
                 {
                     set = true;
                 }
-                WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, Height, effectBase.transform.position.z), _rbody.velocity.y, -0.25f);
-                try
-                {
+                WaterParticleHandler.SplashAtPos(new Vector3(effectBase.transform.position.x, HeightCalc, effectBase.transform.position.z), _rbody.velocity.y, -0.25f);
+                
                     if (effectType < EffectTypes.LaserProjectile)
                     {
                         return;
@@ -700,6 +839,10 @@ namespace WaterMod
                     float destroyMultiplier = 4f;
                     if (effectType == EffectTypes.MissileProjectile)
                     {
+                        if (Patches.debugUtil.LogMissileLeave)
+                        {
+                            Debug.Log("Missile exit : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                        }
                         destroyMultiplier += 1f;
                         var managedEvent = (this.effectBase as MissileProjectile).GetInstanceField("m_BoosterDeactivationEvent") as ManTimedEvents.ManagedEvent;
                         if (managedEvent.TimeRemaining == 0f)
@@ -714,6 +857,10 @@ namespace WaterMod
                     }
                     else
                     {
+                        if (Patches.debugUtil.LogLaserLeave)
+                        {
+                            Debug.Log("Laser exit : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                        }
                         _rbody.velocity = initVelocity * (Density * 0.025f * LaserFraction + 1f);
                     }
                     var managedEvent2 = (this.effectBase as Projectile).GetInstanceField("m_TimeoutDestroyEvent") as ManTimedEvents.ManagedEvent;
@@ -724,7 +871,12 @@ namespace WaterMod
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("Exception: " + e.Message + "\n efectType: " + effectType.ToString() + (_rbody == null ? "\nRigidbody is null!":""));
+                    bool flag = _rbody == null;
+                    Debug.Log("Exception in Ext: " + e.Message + "\n efectType: " + effectType.ToString() + (flag ? "\nRigidbody is null!":""));
+                    if (flag)
+                    {
+                        GetRBody();
+                    }
                     return;
                 }
             }

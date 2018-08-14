@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace WaterMod
 {
-    public static class WaterParticleHandler
+    public class WaterParticleHandler
     {
         public static Texture2D blurredSprite;
         public static Material blurredMat;
@@ -17,6 +14,8 @@ namespace WaterMod
         public static GameObject oSurface;
         public static ParticleSystem FXSplash;
         public static ParticleSystem FXSurface;
+
+        public static bool UseParticleEffects = true;
 
         public static ParticleSystem.MinMaxGradient WaterGradient = new ParticleSystem.MinMaxGradient(
                 new Gradient()
@@ -36,7 +35,7 @@ namespace WaterMod
         public static void Initialize()
         {
             FXFolder = new GameObject("WaterModFX");
-            
+
             oSplash = new GameObject("Splash");
             oSurface = new GameObject("Surface");
 
@@ -51,6 +50,7 @@ namespace WaterMod
             CreateSurface();
             Debug.Log("Created ParticleSystem Surface");
         }
+
         private static void CreateSpriteMaterial()
         {
             foreach (var Shader in GameObject.FindObjectsOfType<Shader>())
@@ -65,6 +65,7 @@ namespace WaterMod
                 mainTexture = blurredSprite
             };
         }
+
         private static void CreateBlurredSprite()
         {
             int radius = 8;
@@ -90,6 +91,7 @@ namespace WaterMod
             m.playOnAwake = false;
             m.maxParticles = 500;
             m.startSpeed = 0f;
+            m.loop = false;
 
             var e = ps.emission;
             e.rateOverTime = 16f;
@@ -117,7 +119,9 @@ namespace WaterMod
             r.maxParticleSize = 20f;
 
             FXSplash = ps;
+            ps.Stop();
         }
+
         private static void CreateSurface()
         {
             var ps = oSurface.AddComponent<ParticleSystem>();
@@ -125,7 +129,7 @@ namespace WaterMod
             var m = ps.main;
             m.simulationSpace = ParticleSystemSimulationSpace.World;
             m.startLifetime = 2.5f;
-            m.playOnAwake = true; //change later
+            m.playOnAwake = false; //change later
             m.maxParticles = 500;
             m.startSpeed = 0f;
             m.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
@@ -157,10 +161,14 @@ namespace WaterMod
             r.maxParticleSize = 20f;
 
             FXSurface = ps;
+            ps.Stop();
+            oSurface.AddComponent<SurfacePool.Item>();
         }
 
         public static void SplashAtPos(Vector3 pos, float Speed, float radius)
         {
+            if (!UseParticleEffects)
+                return;
             float sp = Mathf.Clamp(Mathf.Abs(Speed) * 0.25f, 0.1f, 8f);
             float sqp = Mathf.Sqrt(sp);
             var emitparams = new ParticleSystem.EmitParams
@@ -170,6 +178,88 @@ namespace WaterMod
                 startSize3D = new Vector3(sqp + radius, sp, 1f)
             };
             FXSplash.Emit(emitparams, 1);
+        }
+    }
+
+    public class SurfacePool
+    {
+        public static int SurfaceEffectStartPoolSize = 800;
+        public static bool CanGrow = true;
+        private static List<GameObject> FreeList;
+        public static int Count { get; private set; }
+        public static int Available { get; set; }
+
+        public static void Initiate()
+        {
+            Count = 0;
+            Available = 0;
+            FreeList = new List<GameObject>();
+            if (!WaterParticleHandler.UseParticleEffects)
+            {
+                return;
+            }
+            for (int i = 0; i < SurfaceEffectStartPoolSize; i++)
+            {
+                FreeList.Add(CreateNew());
+            }
+            Available = SurfaceEffectStartPoolSize;
+        }
+
+        public static GameObject GetFromPool()
+        {
+            GameObject ps;
+            if (Available != 0)
+            {
+                Available--;
+                ps = FreeList[Available];
+                ps.GetComponent<Item>().StartUsing();
+                FreeList.RemoveAt(Available);
+                return ps;
+            }
+            ps = CreateNew(true);
+            Debug.Log("Overflow! Added 1 to pool: " + Count.ToString());
+            ps.GetComponent<ParticleSystem>().Play();
+            return ps;
+        }
+
+        public static void ReturnToPool(GameObject surface, float seconds)
+        {
+            surface.GetComponent<ParticleSystem>().Stop();
+            SurfacePool.Available++;
+            SurfacePool.FreeList.Add(surface);
+            surface.GetComponent<Item>().SetDestroy(seconds);
+        }
+
+        private static GameObject CreateNew(bool SetActive = false)
+        {
+            var s = GameObject.Instantiate(WaterParticleHandler.oSurface);
+            s.SetActive(SetActive);
+            Count++;
+            return s;
+        }
+
+        public class Item : MonoBehaviour
+        {
+            public bool Using = true;
+
+            public void SetDestroy(float seconds)
+            {
+                Using = false;
+                Invoke("Destroy", seconds);
+            }
+
+            private void Destroy()
+            {
+                if (!Using)
+                    gameObject.SetActive(false);
+            }
+
+            public void StartUsing()
+            {
+                Using = true;
+                gameObject.SetActive(true);
+                gameObject.GetComponent<ParticleSystem>().Play();
+            }
         }
     }
 }
