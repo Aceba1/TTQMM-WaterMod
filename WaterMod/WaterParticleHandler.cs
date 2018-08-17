@@ -185,7 +185,7 @@ namespace WaterMod
     {
         public static int SurfaceEffectStartPoolSize = 800;
         public static bool CanGrow = true;
-        private static List<GameObject> FreeList;
+        private static List<Item> FreeList;
         public static int Count { get; private set; }
         public static int Available { get; set; }
 
@@ -193,7 +193,7 @@ namespace WaterMod
         {
             Count = 0;
             Available = 0;
-            FreeList = new List<GameObject>();
+            FreeList = new List<Item>();
             if (!WaterParticleHandler.UseParticleEffects)
             {
                 return;
@@ -205,14 +205,14 @@ namespace WaterMod
             Available = SurfaceEffectStartPoolSize;
         }
 
-        public static GameObject GetFromPool()
+        public static Item GetFromPool()
         {
-            GameObject ps;
+            Item ps;
             if (Available != 0)
             {
                 Available--;
                 ps = FreeList[Available];
-                ps.GetComponent<Item>().StartUsing();
+                ps.StartUsing();
                 FreeList.RemoveAt(Available);
                 return ps;
             }
@@ -222,36 +222,42 @@ namespace WaterMod
             return ps;
         }
 
-        public static void ReturnToPool(GameObject surface, float seconds)
+        public static void ReturnToPool(Item surface)
         {
             surface.GetComponent<ParticleSystem>().Stop();
             SurfacePool.Available++;
             SurfacePool.FreeList.Add(surface);
-            surface.GetComponent<Item>().SetDestroy(seconds);
+            surface.SetDestroy();
         }
 
-        private static GameObject CreateNew(bool SetActive = false)
+        private static Item CreateNew(bool SetActive = false)
         {
             var s = GameObject.Instantiate(WaterParticleHandler.oSurface);
             s.SetActive(SetActive);
             Count++;
-            return s;
+            return s.GetComponent<Item>();
         }
 
         public class Item : MonoBehaviour
         {
             public bool Using = true;
 
-            public void SetDestroy(float seconds)
+            public void SetDestroy()
             {
                 Using = false;
-                Invoke("Destroy", seconds);
+                Invoke("Destroy", 2.5f);
             }
 
             private void Destroy()
             {
                 if (!Using)
                     gameObject.SetActive(false);
+            }
+
+            public void UpdatePos(Vector3 position)
+            {
+                Using = true;
+                transform.position = position;
             }
 
             public void StartUsing()

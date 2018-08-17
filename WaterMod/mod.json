@@ -2,7 +2,7 @@
   "Id": "aceba1.ttmm.revived.water",
   "DisplayName": "Water Mod Revived",
   "Author": "Aceba1",
-  "Version": "0.1.0",
+  "Version": "0.3.0",
   "Enable": true,
   "AssemblyName": "WaterMod.dll",
   "EntryMethod": "WaterMod.QPatch.Main"

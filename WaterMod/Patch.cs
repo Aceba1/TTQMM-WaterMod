@@ -10,6 +10,18 @@ namespace WaterMod
 {
     public class QPatch
     {
+        public static bool ModExists(string name)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly.FullName.StartsWith(name))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static float WaterHeight
         {
             get => WaterBuoyancy.HeightCalc;
@@ -42,16 +54,14 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampening");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampeningYAddition");
             thisMod.BindConfig<Patches>(null, "debugUtil");
-            WaterBuoyancy.WeatherMod = WaterBuoyancy.WeatherExists();
+            WaterBuoyancy.WeatherMod = ModExists("TTQMM WeatherMod");
             if (WaterBuoyancy.WeatherMod)
             {
-                Debug.Log("Found WeatherMod!");
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainWeightMultiplier");
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainDrainMultiplier");
                 thisMod.BindConfig<WaterBuoyancy>(null, "FloodChangeClamp");
                 thisMod.BindConfig<WaterBuoyancy>(null, "FloodHeightMultiplier");
             }
-
             _thisMod = thisMod;
         }
     }
@@ -118,6 +128,19 @@ namespace WaterMod
             }
         }
 
+        [HarmonyPatch(typeof(TankBlock))]
+        [HarmonyPatch("OnRecycle")]
+        private class TankBlockRecycle
+        {
+            private static void PostFix(TankBlock __instance)
+            {
+                try
+                {
+                    __instance.gameObject.GetComponent<WaterBuoyancy.WaterBlock>().TryRemoveSurface();
+                }
+                catch { }
+            }
+        }
         [HarmonyPatch(typeof(Tank))]
         [HarmonyPatch("OnSpawn")]
         private class PatchTank
@@ -218,7 +241,7 @@ namespace WaterMod
             BulletDampener = 1E-06f,
             LaserFraction = 0.275f,
             MissileDampener = 0.012f,
-            SurfaceSkinning = 1f,
+            SurfaceSkinning = 0.25f,
             SubmergedTankDampening = 0.4f,
             SubmergedTankDampeningYAddition = 0f,
             SurfaceTankDampening = 0f,
@@ -310,7 +333,7 @@ namespace WaterMod
             if (WeatherMod)
             {
                 float newHeight = RainFlood;
-                newHeight += WeatherModIntegration.RainWeight * RainWeightMultiplier;
+                newHeight += (TTQMM_WeatherMod.RainMaker.isRaining ? TTQMM_WeatherMod.RainMaker.RainWeight : 0f) * RainWeightMultiplier;
                 newHeight *= 1f - RainDrainMultiplier;
                 RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp, FloodChangeClamp);
             }
@@ -328,18 +351,18 @@ namespace WaterMod
                         CameraFilter.SetPixel(i, j, new Color(
                             0.75f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.015f,
                             0.8f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.01f,
-                            0.9f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.025f,
-                            0.26f));
+                            0.9f - (Mathf.Abs(i - 16f) + Mathf.Abs(j - 16f)) * 0.02f,
+                            0.28f));
                     }
                 }
                 CameraFilter.Apply();
 
                 Material material = new Material(Shader.Find("Standard"))
                 {
-                    color = new Color(0.2f, 1f, 1f, 0.45f),
+                    color = new Color(0.2f, 0.8f, 0.75f, 0.4f),
                     renderQueue = 3000
                 };
-                material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.8f); material.SetFloat("_Glossiness", 0.8f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
+                material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.6f); material.SetFloat("_Glossiness", 0.9f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
                 material.DisableKeyword("_ALPHATEST_ON"); material.EnableKeyword("_ALPHABLEND_ON"); material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
 
                 var folder = new GameObject("WaterObject");
@@ -351,7 +374,7 @@ namespace WaterMod
                 component.localScale = new Vector3(2048f, 0.075f, 2048f);
                 Surface.GetComponent<Renderer>().material = material;
 
-                GameObject PhysicsTrigger = new GameObject("Physics");
+                GameObject PhysicsTrigger = new GameObject("PhysicsTrigger");
                 Transform PhysicsTriggerTransform = PhysicsTrigger.transform; PhysicsTriggerTransform.parent = folder.transform;
                 PhysicsTriggerTransform.localScale = new Vector3(2048f, 2048f, 2048f); PhysicsTriggerTransform.localPosition = new Vector3(0f, -1024f, 0f);
                 PhysicsTrigger.AddComponent<BoxCollider>().isTrigger = true;
@@ -367,7 +390,7 @@ namespace WaterMod
                     }
                 }
 
-                GameObject PhysicsCollider = new GameObject("Physics");
+                GameObject PhysicsCollider = new GameObject("WaterCollider");
                 PhysicsCollider.layer = waterlayer;
                 Transform PhysicsColliderTransform = PhysicsCollider.transform; PhysicsColliderTransform.parent = folder.transform;
                 PhysicsColliderTransform.localScale = new Vector3(2048f, 2048f, 2048f); PhysicsColliderTransform.localPosition = new Vector3(0f, -1024f, 0f);
@@ -389,18 +412,6 @@ namespace WaterMod
             {
                 Debug.LogException(e);
             }
-        }
-
-        public static bool WeatherExists()
-        {
-            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.FullName.StartsWith("TTQMM WeatherMod"))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         public class WaterEffect : MonoBehaviour
@@ -485,40 +496,27 @@ namespace WaterMod
             public bool isFanJet;
             public MonoBehaviour componentEffect;
             public Vector3 initVelocity;
-            public GameObject surface = null;
+            public SurfacePool.Item surface = null;
             byte heartBeat = 0;
             public TankBlock TankBlock;
-            sbyte sLife = 0;
             private void Surface()
             {
                 if (WaterParticleHandler.UseParticleEffects)
                 {
-                    if (surface == null)
+                    if (surface == null || !surface.Using)
                     {
                         surface = SurfacePool.GetFromPool();
                     }
                     var e = TankBlock.centreOfMassWorld;
-                    surface.transform.position = new Vector3(e.x, HeightCalc, e.z);
-                    sLife = 8;
+                    surface.UpdatePos(new Vector3(e.x, HeightCalc, e.z));
                 }
             }
-            private void TryRemoveSurface()
+            public void TryRemoveSurface()
             {
                 if (surface != null)
                 {
-                    SurfacePool.ReturnToPool(surface, 2.5f);
+                    SurfacePool.ReturnToPool(surface);
                     surface = null;
-                }
-            }
-
-            private void Update()
-            {
-                if (surface != null)
-                {
-                    if (sLife <= 0)
-                        TryRemoveSurface();
-                    else
-                        sLife--;
                 }
             }
             
@@ -565,7 +563,7 @@ namespace WaterMod
                         }
                         else
                         {
-                            sLife = 0;
+                            TryRemoveSurface();
                         }
                     }
                     else
@@ -591,7 +589,6 @@ namespace WaterMod
                 }
                 else if (Submerge < -0.2f)
                 {
-
                     Submerge = -0.2f;
                 }
                 else
@@ -609,11 +606,13 @@ namespace WaterMod
                 {
                     ApplyConnectedForce_Internal(TankBlock.centreOfMassWorld);
                 }
-                else for (int CellIndex = 0; CellIndex < CellCount; CellIndex++)
+                else
                 {
-                    ApplyConnectedForce_Internal(transform.TransformPoint(intVector[CellIndex].x, intVector[CellIndex].y, intVector[CellIndex].z));
+                    for (int CellIndex = 0; CellIndex < CellCount; CellIndex++)
+                    {
+                        ApplyConnectedForce_Internal(transform.TransformPoint(intVector[CellIndex].x, intVector[CellIndex].y, intVector[CellIndex].z));
+                    }
                 }
-
                 if (this.isFanJet)
                 {
                     ApplyMultiplierFanJet();
@@ -621,7 +620,7 @@ namespace WaterMod
             }
             private void ApplyConnectedForce_Internal(Vector3 vector)
             {
-                float Submerge = HeightCalc - vector.y - TankBlock.BlockCellBounds.extents.y;
+                float Submerge = HeightCalc - vector.y;
                 Submerge = Submerge * Mathf.Abs(Submerge) + SurfaceSkinning;
                 if (Submerge >= -0.5f)
                 {
