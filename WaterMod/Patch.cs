@@ -158,10 +158,6 @@ namespace WaterMod
             {
                 try
                 {
-                    if (debugUtil.LogMissileSpawn)
-                    {
-                        Debug.Log("Missile spawned (?) : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
-                    }
                     var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
                     if (wEffect.effectType >= WaterBuoyancy.EffectTypes.MissileProjectile)
                         return;
