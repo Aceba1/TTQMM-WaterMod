@@ -54,8 +54,8 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampening");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampeningYAddition");
             thisMod.BindConfig<Patches>(null, "debugUtil");
-            WaterBuoyancy.WeatherMod = ModExists("TTQMM WeatherMod");
-            if (WaterBuoyancy.WeatherMod)
+            WaterBuoyancy._WeatherMod = ModExists("TTQMM WeatherMod");
+            if (WaterBuoyancy._WeatherMod)
             {
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainWeightMultiplier");
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainDrainMultiplier");
@@ -132,7 +132,7 @@ namespace WaterMod
         [HarmonyPatch("OnRecycle")]
         private class TankBlockRecycle
         {
-            private static void PostFix(TankBlock __instance)
+            private static void Postfix(TankBlock __instance)
             {
                 try
                 {
@@ -151,41 +151,40 @@ namespace WaterMod
                 wEffect.Subscribe(__instance);
             }
         }
-        [HarmonyPatch(typeof(MissileProjectile))]
-        [HarmonyPatch("OnSpawn")]
+        [HarmonyPatch(typeof(MissileProjectile), "Fire")]
         private class PatchMissile
         {
-            private static void Postfix(Projectile __instance)
+            private static void Postfix(MissileProjectile __instance)
             {
-                if (debugUtil.LogMissileSpawn)
+                try
                 {
-                    Debug.Log("Missile spawned (?) : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                    if (debugUtil.LogMissileSpawn)
+                    {
+                        Debug.Log("Missile spawned (?) : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                    }
+                    var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
+                    if (wEffect.effectType >= WaterBuoyancy.EffectTypes.MissileProjectile)
+                        return;
+                    wEffect.effectBase = __instance;
+                    wEffect.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
+                    if (debugUtil.LogMissileSpawn)
+                    {
+                        Debug.Log("Missile spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
+                    }
                 }
-                var wEffect2 = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
-                if (wEffect2 == null)
-                    wEffect2 = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-                wEffect2.effectBase = __instance;
-                wEffect2.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
-                wEffect2.GetRBody();
-                if (debugUtil.LogMissileSpawn)
-                {
-                    Debug.Log("Missile spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
-                }
+                catch(Exception E) { Debug.Log("Error: " + E.Message + "\n" + E.StackTrace); }
             }
         }
 
-        [HarmonyPatch(typeof(Projectile))]
-        [HarmonyPatch("OnSpawn")]
+        [HarmonyPatch(typeof(Projectile), "Fire")]
         private class PatchProjectile
         {
             private static void Postfix(Projectile __instance)
             {
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
                 if (wEffect == null)
-                {
                     wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-                }
-                else if (wEffect.effectType <= WaterBuoyancy.EffectTypes.NormalProjectile)
+                else if (wEffect.effectType >= WaterBuoyancy.EffectTypes.NormalProjectile)
                     return;
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.NormalProjectile;
@@ -193,22 +192,16 @@ namespace WaterMod
             }
         }
 
-        [HarmonyPatch(typeof(LaserProjectile))]
-        [HarmonyPatch("OnSpawn")]
+        [HarmonyPatch(typeof(LaserProjectile), "Fire")]
         private class PatchLaser
         {
-            private static void Postfix(Projectile __instance)
+            private static void Postfix(LaserProjectile __instance)
             {
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
-                if (wEffect == null)
-                {
-                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-                }
-                else if (wEffect.effectType <= WaterBuoyancy.EffectTypes.LaserProjectile)
+                if (wEffect.effectType >= WaterBuoyancy.EffectTypes.LaserProjectile)
                     return;
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
-                wEffect.GetRBody();
                 if (debugUtil.LogLaserSpawn)
                 {
                     Debug.Log("Laser spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
@@ -262,7 +255,7 @@ namespace WaterMod
         public static GameObject folder;
         private bool ShowGUI = false;
         private Rect Window = new Rect(0, 0, 100, 100);
-        public static bool WeatherMod;
+        public static bool _WeatherMod;
 
         private void OnGUI()
         {
@@ -330,10 +323,10 @@ namespace WaterMod
                 ShowGUI = !ShowGUI;
             }
             folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
-            if (WeatherMod)
+            if (_WeatherMod)
             {
                 float newHeight = RainFlood;
-                newHeight += (TTQMM_WeatherMod.RainMaker.isRaining ? TTQMM_WeatherMod.RainMaker.RainWeight : 0f) * RainWeightMultiplier;
+                newHeight += WeatherMod.RainWeight * RainWeightMultiplier;
                 newHeight *= 1f - RainDrainMultiplier;
                 RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp, FloodChangeClamp);
             }
