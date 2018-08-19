@@ -154,33 +154,32 @@ namespace WaterMod
         [HarmonyPatch(typeof(MissileProjectile), "Fire")]
         private class PatchMissile
         {
-            private static void Postfix(MissileProjectile __instance)
+            private static void Prefix(MissileProjectile __instance)
             {
-                try
+                var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
+                if (wEffect == null)
+                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
+                else if (wEffect.effectType >= WaterBuoyancy.EffectTypes.MissileProjectile)
+                    return;
+                wEffect.effectBase = __instance;
+                wEffect.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
+                if (debugUtil.LogMissileSpawn)
                 {
-                    var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
-                    if (wEffect.effectType >= WaterBuoyancy.EffectTypes.MissileProjectile)
-                        return;
-                    wEffect.effectBase = __instance;
-                    wEffect.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
-                    if (debugUtil.LogMissileSpawn)
-                    {
-                        Debug.Log("Missile spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
-                    }
+                    Debug.Log("Missile spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
                 }
-                catch(Exception E) { Debug.Log("Error: " + E.Message + "\n" + E.StackTrace); }
+                wEffect.GetRBody();
             }
         }
 
         [HarmonyPatch(typeof(Projectile), "Fire")]
         private class PatchProjectile
         {
-            private static void Postfix(Projectile __instance)
+            private static void Prefix(Projectile __instance)
             {
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
                 if (wEffect == null)
                     wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-                else if (wEffect.effectType >= WaterBuoyancy.EffectTypes.NormalProjectile)
+                else
                     return;
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.NormalProjectile;
@@ -191,10 +190,12 @@ namespace WaterMod
         [HarmonyPatch(typeof(LaserProjectile), "Fire")]
         private class PatchLaser
         {
-            private static void Postfix(LaserProjectile __instance)
+            private static void Prefix(LaserProjectile __instance)
             {
                 var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
-                if (wEffect.effectType >= WaterBuoyancy.EffectTypes.LaserProjectile)
+                if (wEffect == null)
+                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
+                else if (wEffect.effectType >= WaterBuoyancy.EffectTypes.LaserProjectile)
                     return;
                 wEffect.effectBase = __instance;
                 wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
@@ -202,6 +203,7 @@ namespace WaterMod
                 {
                     Debug.Log("Laser spawned : at " + UnityEngine.Time.realtimeSinceStartup.ToString());
                 }
+                wEffect.GetRBody();
             }
         }
 
