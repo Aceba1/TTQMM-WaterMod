@@ -42,13 +42,10 @@ namespace WaterMod
             oSplash.transform.parent = FXFolder.transform;
             oSurface.transform.parent = FXFolder.transform;
             CreateBlurredSprite();
-            Debug.Log("Created Sprite 1");
             CreateSpriteMaterial();
-            Debug.Log("Created Sprite material");
             CreateSplash();
-            Debug.Log("Created ParticleSystem Splash");
             CreateSurface();
-            Debug.Log("Created ParticleSystem Surface");
+            Debug.Log("WaterMod: Created Water Effects");
         }
 
         private static void CreateSpriteMaterial()

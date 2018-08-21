@@ -57,6 +57,7 @@ namespace WaterMod
             WaterBuoyancy._WeatherMod = ModExists("TTQMM WeatherMod");
             if (WaterBuoyancy._WeatherMod)
             {
+                Debug.Log("Found WeatherMod!");
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainWeightMultiplier");
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainDrainMultiplier");
                 thisMod.BindConfig<WaterBuoyancy>(null, "FloodChangeClamp");
