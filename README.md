@@ -7,7 +7,7 @@ You can download the latest build [here](https://github.com/Aceba1/TTQMM-WaterMo
 
 You need the ModConfig Helper mod for this to work. You can get that [here](https://github.com/Aceba1/TTQMM-ModConfigHelper).
 
-<h1>
+<hr>
 
 QMM can be found [here](https://github.com/QModManager/TerraTech).
 
