@@ -180,7 +180,7 @@ namespace WaterMod
 
     public class SurfacePool
     {
-        public static int SurfaceEffectStartPoolSize = 800;
+        public static int SurfaceEffectStartPoolSize = 450;
         public static bool CanGrow = true;
         private static List<Item> FreeList;
         public static int Count { get; private set; }
