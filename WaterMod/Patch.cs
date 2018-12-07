@@ -664,7 +664,7 @@ namespace WaterMod
         {
             public WaterObj()
             {
-                set = HeightCalc > this.transform.position.y;
+                set = HeightCalc > this.transform.position.y+1;
             }
             //public TankEffect watertank;
             public byte heartBeat = 0;
