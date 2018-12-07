@@ -253,7 +253,7 @@ namespace WaterMod
         public static WaterBuoyancy _inst;
         public static GameObject folder;
         private bool ShowGUI = false;
-        private Rect Window = new Rect(0, 0, 100, 100);
+        private Rect Window = new Rect(0, 0, 100, 50);
         public static bool _WeatherMod;
 
         private void OnGUI()
@@ -264,14 +264,14 @@ namespace WaterMod
             }
             if (ShowGUI)
             {
-                Window = GUI.Window(0, Window, GUIWindow, "WaterSettings");
+                Window = GUI.Window(29587115, Window, GUIWindow, "Water Settings");
             }
         }
 
         private void GUIWindow(int ID)
         {
-            GUI.Label(new Rect(0, 20, 100, 20), "Water Height: "+Height.ToString());
-            Height = GUI.HorizontalSlider(new Rect(0, 40, 100, 15), Height, -75f, 100f);
+            GUILayout.Label("Water Height: "+Height.ToString());
+            Height = GUILayout.HorizontalSlider(Height, -75f, 100f);
             GUI.DragWindow();
         }
 
