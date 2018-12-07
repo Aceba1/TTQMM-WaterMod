@@ -253,7 +253,7 @@ namespace WaterMod
         public static WaterBuoyancy _inst;
         public static GameObject folder;
         private bool ShowGUI = false;
-        private Rect Window = new Rect(0, 0, 100, 100);
+        private Rect Window = new Rect(0, 0, 100, 75);
         public static bool _WeatherMod;
 
         private void OnGUI()
