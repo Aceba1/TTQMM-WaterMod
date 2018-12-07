@@ -14,3 +14,10 @@ C:\VS Projects\repos\TTQMM WaterMod\WaterMod\obj\Debug\WaterMod.pdb
 C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\Water Mod\mod.json
 C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\Water Mod\WaterMod.dll
 C:\VS Projects\repos\TTQMM WaterMod\WaterMod\bin\Debug\Water Mod\WaterMod.pdb
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\bin\Debug\Water Mod\mod.json
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\bin\Debug\Water Mod\WaterMod.dll
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\bin\Debug\Water Mod\WaterMod.pdb
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\obj\Debug\WaterMod.csprojAssemblyReference.cache
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\obj\Debug\WaterMod.csproj.CoreCompileInputs.cache
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\obj\Debug\WaterMod.dll
+C:\Users\arnceb20\Desktop\Nuterra UI\New\TTQMM-WaterMod\WaterMod\obj\Debug\WaterMod.pdb

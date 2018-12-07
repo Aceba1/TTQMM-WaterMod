@@ -95,7 +95,7 @@ namespace WaterMod
         public static DebugUtil debugUtil = new DebugUtil(false);
 
         [HarmonyPatch(typeof(TankBlock))]
-        [HarmonyPatch("OnSpawn")]
+        [HarmonyPatch("OnPool")]
         private class PatchBlock
         {
             private static void Postfix(TankBlock __instance)
@@ -143,7 +143,7 @@ namespace WaterMod
             }
         }
         [HarmonyPatch(typeof(Tank))]
-        [HarmonyPatch("OnSpawn")]
+        [HarmonyPatch("OnPool")]
         private class PatchTank
         {
             private static void Postfix(Tank __instance)
@@ -209,7 +209,7 @@ namespace WaterMod
         }
 
         [HarmonyPatch(typeof(ResourcePickup))]
-        [HarmonyPatch("OnSpawn")]
+        [HarmonyPatch("OnPool")]
         private class PatchResource
         {
             private static void Postfix(ResourcePickup __instance)
@@ -270,13 +270,8 @@ namespace WaterMod
 
         private void GUIWindow(int ID)
         {
-            GUI.Label(new Rect(0, 20, 100, 20), "Water Height");
+            GUI.Label(new Rect(0, 20, 100, 20), "Water Height: "+Height.ToString());
             Height = GUI.HorizontalSlider(new Rect(0, 40, 100, 15), Height, -75f, 100f);
-
-            if (GUI.Button(new Rect(0, 60, 100, 20), "Save"))
-                QPatch._thisMod.WriteConfigJsonFile();
-            if (GUI.Button(new Rect(0, 80, 100, 20), "Reload"))
-                QPatch._thisMod.ReadConfigJsonFile();
             GUI.DragWindow();
         }
 
@@ -320,6 +315,10 @@ namespace WaterMod
             if (Input.GetKeyDown(KeyCode.Slash))
             {
                 ShowGUI = !ShowGUI;
+                if (!ShowGUI)
+                {
+                    QPatch._thisMod.WriteConfigJsonFile();
+                }
             }
             folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
             if (_WeatherMod)
@@ -496,9 +495,9 @@ namespace WaterMod
                 if (WaterParticleHandler.UseParticleEffects)
                 {
                     if (surface == null || !surface.Using)
-                    {
                         surface = SurfacePool.GetFromPool();
-                    }
+                    if (surface == null)
+                        return;
                     var e = TankBlock.centreOfMassWorld;
                     surface.UpdatePos(new Vector3(e.x, HeightCalc, e.z));
                 }
