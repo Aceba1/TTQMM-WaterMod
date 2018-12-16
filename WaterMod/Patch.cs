@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Reflection;
+using Harmony;
+using QModManager.Utility;
+using ModHelper.Config;
+using UnityEngine;
 
 namespace WaterMod
 {
@@ -514,6 +518,7 @@ namespace WaterMod
                 if (WaterParticleHandler.UseParticleEffects)
                 {
                     if (surface == null || !surface.Using)
+                    { 
                         surface = SurfacePool.GetFromPool();
                     }
 
