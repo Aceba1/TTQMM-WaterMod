@@ -180,8 +180,9 @@ namespace WaterMod
 
     public class SurfacePool
     {
-        public static int SurfaceEffectStartPoolSize = 450;
+        public static int SurfaceEffectStartPoolSize = 100;
         public static bool CanGrow = true;
+        public static int MaxGrow = 500;
         private static List<Item> FreeList;
         public static int Count { get; private set; }
         public static int Available { get; set; }
@@ -190,33 +191,35 @@ namespace WaterMod
         {
             Count = 0;
             Available = 0;
-            FreeList = new List<Item>();
+            FreeList = new List<Item>(SurfaceEffectStartPoolSize);
             if (!WaterParticleHandler.UseParticleEffects)
             {
                 return;
             }
             for (int i = 0; i < SurfaceEffectStartPoolSize; i++)
             {
-                FreeList.Add(CreateNew());
+                FreeList[i] = CreateNew();
             }
             Available = SurfaceEffectStartPoolSize;
         }
 
         public static Item GetFromPool()
-        {
-            Item ps;
+        { 
             if (Available != 0)
             {
                 Available--;
-                ps = FreeList[Available];
+                Item ps = FreeList[Available];
                 ps.StartUsing();
                 FreeList.RemoveAt(Available);
                 return ps;
             }
-            ps = CreateNew(true);
-            Debug.Log("Overflow! Added 1 to pool: " + Count.ToString());
-            ps.GetComponent<ParticleSystem>().Play();
-            return ps;
+            if (Count >= MaxGrow)
+            {
+                return null;
+            }
+            Item ps2 = CreateNew(true);
+            ps2.GetComponent<ParticleSystem>().Play();
+            return ps2;
         }
 
         public static void ReturnToPool(Item surface)
