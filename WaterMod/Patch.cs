@@ -334,11 +334,12 @@ namespace WaterMod
                 else
                 {
                     ShowGUI = !ShowGUI;
+                    if (!ShowGUI)
+                    {
+                        QPatch._thisMod.WriteConfigJsonFile();
+                    }
                 }
-                if (!ShowGUI)
-                {
-                    QPatch._thisMod.WriteConfigJsonFile();
-                }
+                
             }
             folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
             if (_WeatherMod)
@@ -513,7 +514,6 @@ namespace WaterMod
                 if (WaterParticleHandler.UseParticleEffects)
                 {
                     if (surface == null || !surface.Using)
-                    {
                         surface = SurfacePool.GetFromPool();
                     }
 
@@ -521,7 +521,6 @@ namespace WaterMod
                     {
                         return;
                     }
-
                     var e = TankBlock.centreOfMassWorld;
                     surface.UpdatePos(new Vector3(e.x, HeightCalc, e.z));
                 }
