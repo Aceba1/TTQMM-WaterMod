@@ -342,7 +342,14 @@ namespace WaterMod
         {
             if (Input.GetKeyDown(KeyCode.Slash))
             {
-                ShowGUI = !ShowGUI;
+                if (Singleton.Manager<ManNetwork>.inst.IsMultiplayer())
+                {
+                    ManUI.inst.ShowErrorPopup("Hey that's illegal");
+                }
+                else
+                {
+                    ShowGUI = !ShowGUI;
+                }
             }
             folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
             if (_WeatherMod)
