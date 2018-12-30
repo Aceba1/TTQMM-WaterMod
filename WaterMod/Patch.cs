@@ -345,7 +345,7 @@ namespace WaterMod
                 }
                 
             }
-            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
+            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, (Singleton.Manager<ManNetwork>.inst.IsMultiplayer() ? -1000f : HeightCalc), Singleton.camera.transform.position.z);
             if (_WeatherMod)
             {
                 float newHeight = RainFlood;
