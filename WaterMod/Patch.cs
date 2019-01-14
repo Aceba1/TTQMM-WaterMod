@@ -275,13 +275,20 @@ namespace WaterMod
 
         private void OnGUI()
         {
-            if (Camera.main.transform.position.y < folder.transform.position.y)
+            try
             {
-                GUI.DrawTexture(new Rect(0f, 0f, (float)Screen.width, (float)Screen.height), CameraFilter, ScaleMode.ScaleAndCrop);
+                if (Camera.main.transform.position.y < folder.transform.position.y)
+                {
+                    GUI.DrawTexture(new Rect(0f, 0f, (float)Screen.width, (float)Screen.height), CameraFilter, ScaleMode.ScaleAndCrop);
+                }
+                if (ShowGUI)
+                {
+                    Window = GUI.Window(29587115, Window, GUIWindow, "Water Settings");
+                }
             }
-            if (ShowGUI)
+            catch (Exception E)
             {
-                Window = GUI.Window(29587115, Window, GUIWindow, "Water Settings");
+                Console.WriteLine(E.ToString());
             }
         }
 
