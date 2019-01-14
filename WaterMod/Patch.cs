@@ -275,8 +275,14 @@ namespace WaterMod
             GUI.DragWindow();
         }
 
+        internal bool Heart = false;
         private void OnTriggerStay(Collider collider)
         {
+            if (Heart != PistonHeart)
+            {
+                Heart = PistonHeart;
+                return;
+            }
             var wEffect = collider.GetComponentInParent<WaterEffect>();
 
             if (wEffect != null)
@@ -330,8 +336,16 @@ namespace WaterMod
             }
         }
 
+        internal static bool PistonHeart = false;
+
+        internal static void WorldShift()
+        {
+            PistonHeart = !PistonHeart;
+        }
+
         public static void Initiate()
         {
+            ManWorldTreadmill.inst.OnBeforeWorldOriginMove.Subscribe(WorldShift);
             try
             {
                 CameraFilter = new Texture2D(32, 32);
