@@ -54,7 +54,7 @@ namespace WaterMod
             {
                 Debug.Log(Shader.name);
             }
-            var shader = Shader.Find("Particles/Additive");
+            var shader = Shader.Find("Sprites/Diffuse");
             spriteMaterial = new Material(shader);
 
             blurredMat = new Material(shader)
