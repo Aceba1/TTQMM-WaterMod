@@ -501,7 +501,7 @@ namespace WaterMod
                 PhysicsTrigger.AddComponent<BoxCollider>().isTrigger = true;
 
                 _inst = PhysicsTrigger.AddComponent<WaterBuoyancy>();
-                ManNetwork.inst.SubscribeToClientMessage(TTMsgType.BlockAttachedToTech, new ManNetwork.MessageHandler(_inst.OnClientChangeWaterHeight));
+                ManNetwork.inst.SubscribeToClientMessage(WaterBuoyancy.WaterChange, new ManNetwork.MessageHandler(_inst.OnClientChangeWaterHeight));
 
                 int waterlayer = LayerMask.NameToLayer("Water");
                 for (int i = 0; i < 32; i++)
