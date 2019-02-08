@@ -243,7 +243,7 @@ namespace WaterMod
     {
         const TTMsgType WaterChange = (TTMsgType)12578;
 
-        private float ServerWaterHeight = -1000f;
+        private static float ServerWaterHeight = -1000f;
 
         public class WaterChangeMessage : UnityEngine.Networking.MessageBase
         {
@@ -310,10 +310,7 @@ namespace WaterMod
                     Window = GUI.Window(29587115, Window, GUIWindow, "Water Settings");
                 }
             }
-            catch (Exception E)
-            {
-                Console.WriteLine(E.ToString());
-            }
+            catch { }
         }
 
         private void GUIWindow(int ID)
@@ -378,26 +375,32 @@ namespace WaterMod
 
         private void Update()
         {
-            var mp = ManNetwork.inst;
+            ManNetwork mp = null;
+            try { mp = ManNetwork.inst; } catch { }
             if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
             {
-                if (mp.IsMultiplayer())
+
+                if (mp!=null && mp.IsMultiplayer())
                 {
-                    if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                    try
                     {
-                        if (mp.IsServer)
+                        if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
                         {
-                            ShowGUI = !ShowGUI;
-                            if (!ShowGUI)
+                            if (mp.IsServer)
                             {
-                                QPatch._thisMod.WriteConfigJsonFile();
+                                ShowGUI = !ShowGUI;
+                                if (!ShowGUI)
+                                {
+                                    QPatch._thisMod.WriteConfigJsonFile();
+                                }
                             }
                         }
+                        else
+                        {
+                            ManUI.inst.ShowErrorPopup("Hey that's illegal");
+                        }
                     }
-                    else
-                    {
-                        ManUI.inst.ShowErrorPopup("Hey that's illegal");
-                    }
+                    catch { }
                 }
                 else
                 {
@@ -409,13 +412,27 @@ namespace WaterMod
                 }
                 
             }
-            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, (mp.IsMultiplayer() ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc), Singleton.camera.transform.position.z);
+            float val = HeightCalc;
+            try
+            {
+                val = ((mp != null && mp.IsMultiplayer()) ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc);
+            }
+            catch { }
+            try
+            {
+                folder.transform.position = new Vector3(Singleton.camera.transform.position.x, val, Singleton.camera.transform.position.z);
+            }
+            catch { }
             if (_WeatherMod)
             {
-                float newHeight = RainFlood;
-                newHeight += WeatherMod.RainWeight * RainWeightMultiplier;
-                newHeight *= 1f - RainDrainMultiplier;
-                RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp, FloodChangeClamp);
+                try
+                {
+                    float newHeight = RainFlood;
+                    newHeight += WeatherMod.RainWeight * RainWeightMultiplier;
+                    newHeight *= 1f - RainDrainMultiplier;
+                    RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp, FloodChangeClamp);
+                }
+                catch { }
             }
         }
 
@@ -470,6 +487,8 @@ namespace WaterMod
                 var folder = new GameObject("WaterObject");
                 folder.transform.position = Vector3.zero;
 
+                WaterBuoyancy.folder = folder;
+
                 GameObject Surface = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 Destroy(Surface.GetComponent<CapsuleCollider>());
                 Transform component = Surface.transform; component.parent = folder.transform;
@@ -498,8 +517,6 @@ namespace WaterMod
                 Transform PhysicsColliderTransform = PhysicsCollider.transform; PhysicsColliderTransform.parent = folder.transform;
                 PhysicsColliderTransform.localScale = new Vector3(2048f, 2048f, 2048f); PhysicsColliderTransform.localPosition = new Vector3(0f, -1024f, 0f);
                 PhysicsCollider.AddComponent<BoxCollider>();
-
-                WaterBuoyancy.folder = folder;
             }
             catch (Exception e)
             {
