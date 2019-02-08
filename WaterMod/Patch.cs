@@ -463,7 +463,7 @@ namespace WaterMod
                 CameraFilter.Apply();
 
                 Material material = null;
-
+                /*
                 Material[] search = Resources.FindObjectsOfTypeAll<Material>();
                 for (int i = 0; i < search.Length; i++)
                 {
@@ -473,6 +473,7 @@ namespace WaterMod
                         break;
                     }
                 }
+                */
                 if (material == null)
                 {
                     material = new Material(Shader.Find("Standard"))
