@@ -320,14 +320,18 @@ namespace WaterMod
         {
             GUILayout.Label("Height: " + Height.ToString());
             Height = GUILayout.HorizontalSlider(Height, -75f, 100f);
-            if (ManNetwork.inst.IsMultiplayer() && ManNetwork.inst.IsServer)
+            try
             {
-                if (ServerWaterHeight != Height)
+                if (ManNetwork.inst.IsMultiplayer() && ManNetwork.inst.IsServer)
                 {
-                    ServerWaterHeight = Height;
-                    ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight });
+                    if (ServerWaterHeight != Height)
+                    {
+                        ServerWaterHeight = Height;
+                        ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight });
+                    }
                 }
             }
+            catch { }
             GUI.DragWindow();
         }
 
