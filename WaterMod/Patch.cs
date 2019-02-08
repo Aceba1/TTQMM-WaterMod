@@ -241,6 +241,30 @@ namespace WaterMod
 
     internal class WaterBuoyancy : MonoBehaviour
     {
+        const TTMsgType WaterChange = (TTMsgType)12578;
+
+        private float ServerWaterHeight = -1000f;
+
+        public class WaterChangeMessage : UnityEngine.Networking.MessageBase
+        {
+            public override void Deserialize(UnityEngine.Networking.NetworkReader reader)
+            {
+                this.Height = reader.ReadSingle();
+            }
+            
+            public override void Serialize(UnityEngine.Networking.NetworkWriter writer)
+            {
+                writer.Write(this.Height);
+            }
+            
+            public float Height;
+        }
+
+        public void OnClientChangeWaterHeight(UnityEngine.Networking.NetworkMessage netMsg)
+        {
+            ServerWaterHeight = netMsg.ReadMessage<WaterChangeMessage>().Height;
+        }
+
         public static Texture2D CameraFilter;
 
         public static float Height = -25f,
@@ -296,6 +320,14 @@ namespace WaterMod
         {
             GUILayout.Label("Height: " + Height.ToString());
             Height = GUILayout.HorizontalSlider(Height, -75f, 100f);
+            if (ManNetwork.inst.IsMultiplayer() && ManNetwork.inst.IsServer)
+            {
+                if (ServerWaterHeight != Height)
+                {
+                    ServerWaterHeight = Height;
+                    ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight });
+                }
+            }
             GUI.DragWindow();
         }
 
@@ -342,11 +374,26 @@ namespace WaterMod
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Slash))
+            var mp = ManNetwork.inst;
+            if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
             {
-                if (Singleton.Manager<ManNetwork>.inst.IsMultiplayer())
+                if (mp.IsMultiplayer())
                 {
-                    ManUI.inst.ShowErrorPopup("Hey that's illegal");
+                    if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                    {
+                        if (mp.IsServer)
+                        {
+                            ShowGUI = !ShowGUI;
+                            if (!ShowGUI)
+                            {
+                                QPatch._thisMod.WriteConfigJsonFile();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ManUI.inst.ShowErrorPopup("Hey that's illegal");
+                    }
                 }
                 else
                 {
@@ -358,7 +405,7 @@ namespace WaterMod
                 }
                 
             }
-            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, (Singleton.Manager<ManNetwork>.inst.IsMultiplayer() ? -1000f : HeightCalc), Singleton.camera.transform.position.z);
+            folder.transform.position = new Vector3(Singleton.camera.transform.position.x, (mp.IsMultiplayer() ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc), Singleton.camera.transform.position.z);
             if (_WeatherMod)
             {
                 float newHeight = RainFlood;
@@ -394,13 +441,27 @@ namespace WaterMod
                 }
                 CameraFilter.Apply();
 
-                Material material = new Material(Shader.Find("Standard"))
+                Material material = null;
+
+                Material[] search = Resources.FindObjectsOfTypeAll<Material>();
+                for (int i = 0; i < search.Length; i++)
                 {
-                    color = new Color(0.2f, 0.8f, 0.75f, 0.4f),
-                    renderQueue = 3000
-                };
-                material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.6f); material.SetFloat("_Glossiness", 0.9f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
-                material.DisableKeyword("_ALPHATEST_ON"); material.EnableKeyword("_ALPHABLEND_ON"); material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                    if (search[i].name.StartsWith("Mat_Pickup_Resource_RodiusCapsule"))
+                    {
+                        material = search[i];
+                        break;
+                    }
+                }
+                if (material == null)
+                {
+                    material = new Material(Shader.Find("Standard"))
+                    {
+                        renderQueue = 3000,
+                        color = new Color(0.2f, 0.8f, 0.75f, 0.4f)
+                    };
+                    material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.6f); material.SetFloat("_Glossiness", 0.9f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
+                    material.DisableKeyword("_ALPHATEST_ON"); material.EnableKeyword("_ALPHABLEND_ON"); material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                }
 
                 var folder = new GameObject("WaterObject");
                 folder.transform.position = Vector3.zero;
@@ -417,6 +478,7 @@ namespace WaterMod
                 PhysicsTrigger.AddComponent<BoxCollider>().isTrigger = true;
 
                 _inst = PhysicsTrigger.AddComponent<WaterBuoyancy>();
+                ManNetwork.inst.SubscribeToClientMessage(TTMsgType.BlockAttachedToTech, new ManNetwork.MessageHandler(_inst.OnClientChangeWaterHeight));
 
                 int waterlayer = LayerMask.NameToLayer("Water");
                 for (int i = 0; i < 32; i++)
