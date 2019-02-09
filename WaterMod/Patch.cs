@@ -324,7 +324,7 @@ namespace WaterMod
             Height = GUILayout.HorizontalSlider(Height, -75f, 100f);
             try
             {
-                if (ManNetwork.inst.IsMultiplayer() && ManNetwork.inst.IsServer)
+                if (ManNetwork.inst.IsMultiplayer() && ManNetwork.IsHost)
                 {
                     if (ServerWaterHeight != Height)
                     {
@@ -397,7 +397,7 @@ namespace WaterMod
                     {
                         if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
                         {
-                            if (mp.IsServer)
+                            if (ManNetwork.IsHost)
                             {
                                 ShowGUI = !ShowGUI;
                                 if (!ShowGUI)
@@ -408,9 +408,7 @@ namespace WaterMod
                             }
                             else
                             {
-                                var msg = new UIMessageHUD();
-                                msg.SetSpeaker(ManOnScreenMessages.Speaker.None, ManOnScreenMessages.Side.Left);
-                                msg.ShowMessage("When playing Co-Op Multiplayer, the host is the only one who controls the water");
+                                Console.WriteLine("Tried to change water, but is a client!");
                             }
                         }
                         else
