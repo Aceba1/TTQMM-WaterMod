@@ -260,9 +260,12 @@ namespace WaterMod
             public float Height;
         }
 
-        public void OnClientChangeWaterHeight(UnityEngine.Networking.NetworkMessage netMsg)
+        public static void OnClientChangeWaterHeight(UnityEngine.Networking.NetworkMessage netMsg)
         {
-            ServerWaterHeight = netMsg.ReadMessage<WaterChangeMessage>().Height;
+            var reader = new WaterChangeMessage();
+            netMsg.ReadMessage(reader);
+            ServerWaterHeight = reader.Height;
+            Console.WriteLine("Received new water height, changing to " + ServerWaterHeight.ToString());
         }
 
         public static Texture2D CameraFilter;
@@ -313,6 +316,8 @@ namespace WaterMod
             catch { }
         }
 
+        bool Synced = false;
+
         private void GUIWindow(int ID)
         {
             GUILayout.Label("Height: " + Height.ToString());
@@ -325,6 +330,7 @@ namespace WaterMod
                     {
                         ServerWaterHeight = Height;
                         ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight });
+                        Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
                     }
                 }
             }
@@ -375,12 +381,17 @@ namespace WaterMod
 
         private void Update()
         {
-            ManNetwork mp = null;
-            try { mp = ManNetwork.inst; } catch { }
-            if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
+            ManNetwork mp = ManNetwork.inst;
+            bool flag = false;
+            if (mp != null && mp.IsMultiplayer())
+            {
+                flag = true;
+            }
+
+                if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
             {
 
-                if (mp!=null && mp.IsMultiplayer())
+                if (mp != null && mp.IsMultiplayer())
                 {
                     try
                     {
@@ -391,13 +402,20 @@ namespace WaterMod
                                 ShowGUI = !ShowGUI;
                                 if (!ShowGUI)
                                 {
-                                    QPatch._thisMod.WriteConfigJsonFile();
+                                    mp.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = Height });
+                                    Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
                                 }
+                            }
+                            else
+                            {
+                                var msg = new UIMessageHUD();
+                                msg.SetSpeaker(ManOnScreenMessages.Speaker.None, ManOnScreenMessages.Side.Left);
+                                msg.ShowMessage("When playing Co-Op Multiplayer, the host is the only one who controls the water");
                             }
                         }
                         else
                         {
-                            ManUI.inst.ShowErrorPopup("Hey that's illegal");
+                            ManUI.inst.ShowErrorPopup("You cannot use water in this gamemode");
                         }
                     }
                     catch { }
@@ -418,11 +436,7 @@ namespace WaterMod
                 val = ((mp != null && mp.IsMultiplayer()) ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc);
             }
             catch { }
-            try
-            {
                 folder.transform.position = new Vector3(Singleton.camera.transform.position.x, val, Singleton.camera.transform.position.z);
-            }
-            catch { }
             if (_WeatherMod)
             {
                 try
@@ -502,7 +516,6 @@ namespace WaterMod
                 PhysicsTrigger.AddComponent<BoxCollider>().isTrigger = true;
 
                 _inst = PhysicsTrigger.AddComponent<WaterBuoyancy>();
-                ManNetwork.inst.SubscribeToClientMessage(WaterBuoyancy.WaterChange, new ManNetwork.MessageHandler(_inst.OnClientChangeWaterHeight));
 
                 int waterlayer = LayerMask.NameToLayer("Water");
                 for (int i = 0; i < 32; i++)
