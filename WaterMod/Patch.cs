@@ -241,7 +241,7 @@ namespace WaterMod
 
     internal class WaterBuoyancy : MonoBehaviour
     {
-        const TTMsgType WaterChange = (TTMsgType)12578;
+        const TTMsgType WaterChange = (TTMsgType)228;
 
         private static float ServerWaterHeight = -1000f;
 
@@ -329,7 +329,7 @@ namespace WaterMod
                     if (ServerWaterHeight != Height)
                     {
                         ServerWaterHeight = Height;
-                        ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight });
+                        ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight }, ManNetwork.inst.MyPlayer.netId);
                         Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
                     }
                 }
@@ -379,6 +379,8 @@ namespace WaterMod
             heartBeat++;
         }
 
+        bool Subscribed = false;
+
         private void Update()
         {
             ManNetwork mp = ManNetwork.inst;
@@ -386,12 +388,18 @@ namespace WaterMod
             if (mp != null && mp.IsMultiplayer())
             {
                 flag = true;
+                if (!Subscribed)
+                {
+                    mp.SubscribeToClientMessage(mp.MyPlayer.netId, WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
+                    Console.WriteLine("Subscribed to water height net");
+                    Subscribed = true;
+                }
             }
 
-                if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
+            if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
             {
 
-                if (mp != null && mp.IsMultiplayer())
+                if (flag)
                 {
                     try
                     {
@@ -402,7 +410,7 @@ namespace WaterMod
                                 ShowGUI = !ShowGUI;
                                 if (!ShowGUI)
                                 {
-                                    mp.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = Height });
+                                    mp.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = Height }, mp.MyPlayer.netId);
                                     Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
                                 }
                             }
@@ -426,7 +434,7 @@ namespace WaterMod
                         QPatch._thisMod.WriteConfigJsonFile();
                     }
                 }
-                
+
             }
             float val = HeightCalc;
             try
