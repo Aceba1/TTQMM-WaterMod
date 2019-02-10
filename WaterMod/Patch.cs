@@ -383,77 +383,73 @@ namespace WaterMod
 
         private void Update()
         {
-            ManNetwork mp = ManNetwork.inst;
-            bool flag = false;
-            if (mp != null && mp.IsMultiplayer())
+            try
             {
-                flag = true;
-                if (!Subscribed)
+                ManNetwork mp = ManNetwork.inst;
+                bool flag = false;
+                if (mp != null && mp.IsMultiplayer())
                 {
-                    mp.SubscribeToClientMessage(mp.MyPlayer.netId, WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
-                    Console.WriteLine("Subscribed to water height net");
-                    Subscribed = true;
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
-            {
-
-                if (flag)
-                {
-                    try
+                    flag = true;
+                    if (!Subscribed)
                     {
-                        if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                        mp.SubscribeToClientMessage(/*mp.MyPlayer.netId,*/ WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
+                        Console.WriteLine("Subscribed to water height net");
+                        Subscribed = true;
+                    }
+                }
+
+                if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
+                {
+
+                    if (flag)
+                    {
+                        try
                         {
-                            if (ManNetwork.IsHost)
+                            if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
                             {
-                                ShowGUI = !ShowGUI;
-                                if (!ShowGUI)
+                                if (ManNetwork.IsHost)
                                 {
-                                    mp.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = Height }, mp.MyPlayer.netId);
-                                    Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
+                                    ShowGUI = !ShowGUI;
+                                    if (!ShowGUI)
+                                    {
+                                        mp.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = Height }/*, mp.MyPlayer.netId*/);
+                                        Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Tried to change water, but is a client!");
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Tried to change water, but is a client!");
+                                ManUI.inst.ShowErrorPopup("You cannot use water in this gamemode");
                             }
                         }
-                        else
+                        catch { }
+                    }
+                    else
+                    {
+                        ShowGUI = !ShowGUI;
+                        if (!ShowGUI)
                         {
-                            ManUI.inst.ShowErrorPopup("You cannot use water in this gamemode");
+                            QPatch._thisMod.WriteConfigJsonFile();
                         }
                     }
-                    catch { }
-                }
-                else
-                {
-                    ShowGUI = !ShowGUI;
-                    if (!ShowGUI)
-                    {
-                        QPatch._thisMod.WriteConfigJsonFile();
-                    }
-                }
 
-            }
-            float val = HeightCalc;
-            try
-            {
-                val = ((mp != null && mp.IsMultiplayer()) ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc);
-            }
-            catch { }
+                }
+                float val = HeightCalc;
+                    val = ((mp != null && mp.IsMultiplayer()) ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc);
                 folder.transform.position = new Vector3(Singleton.camera.transform.position.x, val, Singleton.camera.transform.position.z);
-            if (_WeatherMod)
-            {
-                try
+                if (_WeatherMod)
                 {
                     float newHeight = RainFlood;
                     newHeight += WeatherMod.RainWeight * RainWeightMultiplier;
                     newHeight *= 1f - RainDrainMultiplier;
                     RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp, FloodChangeClamp);
                 }
-                catch { }
             }
+            catch { }
         }
 
         internal static bool PistonHeart = false;

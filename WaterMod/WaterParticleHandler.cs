@@ -50,14 +50,20 @@ namespace WaterMod
 
         private static void CreateSpriteMaterial()
         {
-            foreach (var Shader in GameObject.FindObjectsOfType<Shader>())
+            Material material = null;
+            Material[] search = Resources.FindObjectsOfTypeAll<Material>();
+            for (int i = 0; i < search.Length; i++)
             {
-                Debug.Log(Shader.name);
+                if (search[i].name.StartsWith("Default-Particle"))
+                {
+                    material = search[i];
+                    break;
+                }
             }
-            var shader = Shader.Find("Standard");
-            spriteMaterial = new Material(shader);
 
-            blurredMat = new Material(shader)
+            spriteMaterial = new Material(material);
+
+            blurredMat = new Material(material)
             {
                 mainTexture = blurredSprite
             };
