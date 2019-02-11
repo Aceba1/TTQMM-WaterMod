@@ -85,7 +85,7 @@ namespace WaterMod
                 }
             }
 
-            [HarmonyPatch(typeof(ManNetwork), "OnStartClient")]
+            [HarmonyPatch(typeof(NetPlayer), "OnStartClient")]
             static class OnStartClient
             {
                 static void Postfix(NetPlayer __instance)
