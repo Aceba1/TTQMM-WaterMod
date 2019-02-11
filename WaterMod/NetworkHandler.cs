@@ -65,6 +65,12 @@ namespace WaterMod
 
         public static class Patches
         {
+            //[HarmonyPatch(typeof(ManLooseBlocks), "RegisterMessageHandlers")]
+            //static class CreateWaterHooks
+            //{
+            //    static void Postfix
+            //}
+
             [HarmonyPatch(typeof(NetPlayer), "OnRecycle")]
             static class OnRecycle
             {
@@ -79,10 +85,10 @@ namespace WaterMod
                 }
             }
 
-            [HarmonyPatch(typeof(ManNetwork),"AddPlayer")]
+            [HarmonyPatch(typeof(ManNetwork), "AddPlayer")]
             static class OnStartClient
             {
-                static void Posfix(NetPlayer __instance)
+                static void Postfix(NetPlayer __instance)
                 {
                     Singleton.Manager<ManNetwork>.inst.SubscribeToClientMessage(__instance.netId, WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
                     Console.WriteLine("Subscribed " + __instance.netId.ToString() + " to water level updates from host");
