@@ -261,7 +261,7 @@ namespace WaterMod
 
         public static float HeightCalc
         {
-            get => Height + (RainFlood * FloodHeightMultiplier);
+            get => ManGameMode.inst.IsCurrentModeMultiplayer() ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? NetworkHandler.ServerWaterHeight : -1000f) : Height + (RainFlood * FloodHeightMultiplier);
         }
 
         public static float RainFlood = 0f;
@@ -397,9 +397,7 @@ namespace WaterMod
                     }
 
                 }
-                float val = HeightCalc;
-                    val = (flag ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? NetworkHandler.ServerWaterHeight : -1000f) : HeightCalc);
-                folder.transform.position = new Vector3(Singleton.camera.transform.position.x, val, Singleton.camera.transform.position.z);
+                folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
                 if (_WeatherMod)
                 {
                     float newHeight = RainFlood;
