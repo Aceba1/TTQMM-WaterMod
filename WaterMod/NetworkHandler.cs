@@ -52,7 +52,7 @@ namespace WaterMod
                     Singleton.Manager<ManNetwork>.inst.SendToAllClients(WaterChange, new WaterChangeMessage(Water), Host);
                     Console.WriteLine("Sent new water level");
                 }
-                catch { Console.WriteLine("Failed to send new water level"); }
+                catch { Console.WriteLine("Failed to send new water level..."); }
         }
 
         public static void OnClientChangeWaterHeight(UnityEngine.Networking.NetworkMessage netMsg)
@@ -85,7 +85,7 @@ namespace WaterMod
                 }
             }
 
-            [HarmonyPatch(typeof(ManNetwork), "AddPlayer")]
+            [HarmonyPatch(typeof(ManNetwork), "OnStartClient")]
             static class OnStartClient
             {
                 static void Postfix(NetPlayer __instance)
@@ -100,12 +100,14 @@ namespace WaterMod
             {
                 static void Postfix(NetPlayer __instance)
                 {
-                    if (__instance.isServer || __instance.isLocalPlayer)
+                    if (!HostExists)
+                    {
                         serverWaterHeight = -1000f;
-                    //Singleton.Manager<ManNetwork>.inst.SubscribeToServerMessage(__instance.netId, WaterChange, new ManNetwork.MessageHandler(OnServerChangeWaterHeight));
-                    Console.WriteLine("Host started, hooked water level broadcasting to " + __instance.netId.ToString());
-                    Host = __instance.netId;
-                    HostExists = true;
+                        //Singleton.Manager<ManNetwork>.inst.SubscribeToServerMessage(__instance.netId, WaterChange, new ManNetwork.MessageHandler(OnServerChangeWaterHeight));
+                        Console.WriteLine("Host started, hooked water level broadcasting to " + __instance.netId.ToString());
+                        Host = __instance.netId;
+                        HostExists = true;
+                    }
                 }
             }
         }
