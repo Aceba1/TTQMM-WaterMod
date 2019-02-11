@@ -259,9 +259,28 @@ namespace WaterMod
             FloodChangeClamp = 0.00003f,
             FloodHeightMultiplier = 15f;
 
+        private static float NetHeightSmooth = 0f;
+
         public static float HeightCalc
         {
-            get => ManGameMode.inst.IsCurrentModeMultiplayer() ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? NetworkHandler.ServerWaterHeight : -1000f) : Height + (RainFlood * FloodHeightMultiplier);
+            get
+            {
+                if (ManGameMode.inst.IsCurrentModeMultiplayer())
+                {
+                    if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                    {
+                        return NetHeightSmooth;
+                    }
+                    else
+                    {
+                        return -1000f;
+                    }
+                }
+                else
+                {
+                    return Height + (RainFlood * FloodHeightMultiplier);
+                }
+            }
         }
 
         public static float RainFlood = 0f;
@@ -397,8 +416,12 @@ namespace WaterMod
                     }
 
                 }
+                if (flag && ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                {
+                    NetHeightSmooth = NetHeightSmooth * 0.9f + NetworkHandler.ServerWaterHeight * 0.1f;
+                }
                 folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
-                if (_WeatherMod)
+                if (_WeatherMod && !flag)
                 {
                     float newHeight = RainFlood;
                     newHeight += WeatherMod.RainWeight * RainWeightMultiplier;

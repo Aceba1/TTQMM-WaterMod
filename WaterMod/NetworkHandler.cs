@@ -91,7 +91,8 @@ namespace WaterMod
                 static void Postfix(NetPlayer __instance)
                 {
                     Singleton.Manager<ManNetwork>.inst.SubscribeToClientMessage(__instance.netId, WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
-                    Console.WriteLine("Subscribed " + __instance.netId.ToString() + " to water level updates from host");
+                    Console.WriteLine("Subscribed " + __instance.netId.ToString() + " to water level updates from host. Sending current level");
+                    Singleton.Manager<ManNetwork>.inst.SendToClient(__instance.connectionToServer.connectionId, WaterChange, new WaterChangeMessage(ServerWaterHeight));
                 }
             }
 
