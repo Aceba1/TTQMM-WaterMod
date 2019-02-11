@@ -63,10 +63,8 @@ namespace WaterMod
 
             spriteMaterial = new Material(material);
 
-            blurredMat = new Material(material)
-            {
-                mainTexture = blurredSprite
-            };
+            blurredMat = new Material(material);
+            blurredMat.mainTexture = blurredSprite;
         }
 
         private static void CreateBlurredSprite()

@@ -241,33 +241,6 @@ namespace WaterMod
 
     internal class WaterBuoyancy : MonoBehaviour
     {
-        const TTMsgType WaterChange = (TTMsgType)228;
-
-        private static float ServerWaterHeight = -1000f;
-
-        public class WaterChangeMessage : UnityEngine.Networking.MessageBase
-        {
-            public override void Deserialize(UnityEngine.Networking.NetworkReader reader)
-            {
-                this.Height = reader.ReadSingle();
-            }
-            
-            public override void Serialize(UnityEngine.Networking.NetworkWriter writer)
-            {
-                writer.Write(this.Height);
-            }
-            
-            public float Height;
-        }
-
-        public static void OnClientChangeWaterHeight(UnityEngine.Networking.NetworkMessage netMsg)
-        {
-            var reader = new WaterChangeMessage();
-            netMsg.ReadMessage(reader);
-            ServerWaterHeight = reader.Height;
-            Console.WriteLine("Received new water height, changing to " + ServerWaterHeight.ToString());
-        }
-
         public static Texture2D CameraFilter;
 
         public static float Height = -25f,
@@ -316,8 +289,6 @@ namespace WaterMod
             catch { }
         }
 
-        bool Synced = false;
-
         private void GUIWindow(int ID)
         {
             GUILayout.Label("Height: " + Height.ToString());
@@ -326,11 +297,11 @@ namespace WaterMod
             {
                 if (ManNetwork.inst.IsMultiplayer() && ManNetwork.IsHost)
                 {
-                    if (ServerWaterHeight != Height)
+                    if (NetworkHandler.ServerWaterHeight != Height)
                     {
-                        ServerWaterHeight = Height;
-                        ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight }, ManNetwork.inst.MyPlayer.netId);
-                        Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
+                        NetworkHandler.ServerWaterHeight = Height;
+                        //ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight }, ManNetwork.inst.MyPlayer.netId);
+                        //Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
                     }
                 }
             }
@@ -378,8 +349,7 @@ namespace WaterMod
         {
             heartBeat++;
         }
-
-        bool Subscribed = false;
+        
 
         private void Update()
         {
@@ -390,12 +360,6 @@ namespace WaterMod
                 if (mp != null && mp.IsMultiplayer())
                 {
                     flag = true;
-                    if (!Subscribed)
-                    {
-                        mp.SubscribeToClientMessage(/*mp.MyPlayer.netId,*/ WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
-                        Console.WriteLine("Subscribed to water height net");
-                        Subscribed = true;
-                    }
                 }
 
                 if (Input.GetKeyDown(KeyCode.Slash) && !Input.GetKey(KeyCode.LeftShift))
@@ -410,11 +374,6 @@ namespace WaterMod
                                 if (ManNetwork.IsHost)
                                 {
                                     ShowGUI = !ShowGUI;
-                                    if (!ShowGUI)
-                                    {
-                                        mp.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = Height }/*, mp.MyPlayer.netId*/);
-                                        Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
-                                    }
                                 }
                                 else
                                 {
@@ -439,7 +398,7 @@ namespace WaterMod
 
                 }
                 float val = HeightCalc;
-                    val = ((mp != null && mp.IsMultiplayer()) ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? ServerWaterHeight : -1000f) : HeightCalc);
+                    val = (flag ? (ManGameMode.inst.IsCurrent<ModeCoOpCreative>() ? NetworkHandler.ServerWaterHeight : -1000f) : HeightCalc);
                 folder.transform.position = new Vector3(Singleton.camera.transform.position.x, val, Singleton.camera.transform.position.z);
                 if (_WeatherMod)
                 {
