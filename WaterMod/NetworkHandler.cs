@@ -50,7 +50,7 @@ namespace WaterMod
             if (HostExists) try
                 {
                     Singleton.Manager<ManNetwork>.inst.SendToAllClients(WaterChange, new WaterChangeMessage(Water), Host);
-                    Console.WriteLine("Sent new water level");
+                    Console.WriteLine("Sent new water level to all");
                 }
                 catch { Console.WriteLine("Failed to send new water level..."); }
         }
@@ -92,7 +92,7 @@ namespace WaterMod
                 {
                     Singleton.Manager<ManNetwork>.inst.SubscribeToClientMessage(__instance.netId, WaterChange, new ManNetwork.MessageHandler(OnClientChangeWaterHeight));
                     Console.WriteLine("Subscribed " + __instance.netId.ToString() + " to water level updates from host. Sending current level");
-                    Singleton.Manager<ManNetwork>.inst.SendToClient(__instance.connectionToServer.connectionId, WaterChange, new WaterChangeMessage(ServerWaterHeight));
+                    TryBroadcastNewHeight(serverWaterHeight);
                 }
             }
 
