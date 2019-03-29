@@ -288,44 +288,42 @@ namespace WaterMod
         public byte heartBeat;
         public static WaterBuoyancy _inst;
         public static GameObject folder;
-        private bool ShowGUI = false;
-        private Rect Window = new Rect(0, 0, 100, 75);
         public static bool _WeatherMod;
+        private bool ShowGUI = false;
+        private WaterGUI waterGUI;
 
-        private void OnGUI()
+        internal class WaterGUI : MonoBehaviour
         {
-            try
+            private Rect Window = new Rect(0, 0, 100, 75);
+
+            private void OnGUI()
             {
-                if (Camera.main.transform.position.y < folder.transform.position.y)
-                {
-                    GUI.DrawTexture(new Rect(0f, 0f, (float)Screen.width, (float)Screen.height), CameraFilter, ScaleMode.ScaleAndCrop);
-                }
-                if (ShowGUI)
+                try
                 {
                     Window = GUI.Window(29587115, Window, GUIWindow, "Water Settings");
                 }
+                catch { }
             }
-            catch { }
-        }
 
-        private void GUIWindow(int ID)
-        {
-            GUILayout.Label("Height: " + Height.ToString());
-            Height = GUILayout.HorizontalSlider(Height, -75f, 100f);
-            try
+            private void GUIWindow(int ID)
             {
-                if (ManNetwork.inst.IsMultiplayer() && ManNetwork.IsHost)
+                GUILayout.Label("Height: " + Height.ToString());
+                Height = GUILayout.HorizontalSlider(Height, -75f, 100f);
+                try
                 {
-                    if (NetworkHandler.ServerWaterHeight != Height)
+                    if (ManNetwork.inst.IsMultiplayer() && ManNetwork.IsHost)
                     {
-                        NetworkHandler.ServerWaterHeight = Height;
-                        //ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight }, ManNetwork.inst.MyPlayer.netId);
-                        //Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
+                        if (NetworkHandler.ServerWaterHeight != Height)
+                        {
+                            NetworkHandler.ServerWaterHeight = Height;
+                            //ManNetwork.inst.SendToAllClients(WaterChange, new WaterChangeMessage() { Height = ServerWaterHeight }, ManNetwork.inst.MyPlayer.netId);
+                            //Console.WriteLine("Sent new water height, changed to " + ServerWaterHeight.ToString());
+                        }
                     }
                 }
+                catch { }
+                GUI.DragWindow();
             }
-            catch { }
-            GUI.DragWindow();
         }
 
         internal bool Heart = false;
@@ -368,12 +366,30 @@ namespace WaterMod
         {
             heartBeat++;
         }
-        
+
+        bool CameraSubmerged = false;
+        FogMode fMode = RenderSettings.fogMode;
 
         private void Update()
         {
             try
             {
+                if (Camera.main.transform.position.y < folder.transform.position.y)
+                {
+                    CameraSubmerged = true;
+                    RenderSettings.skybox = null;
+                    RenderSettings.fogColor = new Color(0.15f, 0.5f, 0.65f, 0.9f);
+                    RenderSettings.fogMode = FogMode.Linear;
+                    RenderSettings.fogStartDistance = 10f;
+                    RenderSettings.fogEndDistance = 200f;
+                }
+                else if (CameraSubmerged)
+                {
+                    CameraSubmerged = false;
+                    RenderSettings.fogMode = fMode;
+                    ManTimeOfDay.inst.EnableSkyDome(true);
+                }
+
                 ManNetwork mp = ManNetwork.inst;
                 bool flag = false;
                 if (mp != null && mp.IsMultiplayer())
@@ -393,6 +409,7 @@ namespace WaterMod
                                 if (ManNetwork.IsHost)
                                 {
                                     ShowGUI = !ShowGUI;
+                                    waterGUI.gameObject.SetActive(ShowGUI);
                                 }
                                 else
                                 {
@@ -409,6 +426,7 @@ namespace WaterMod
                     else
                     {
                         ShowGUI = !ShowGUI;
+                        waterGUI.gameObject.SetActive(ShowGUI);
                         if (!ShowGUI)
                         {
                             QPatch._thisMod.WriteConfigJsonFile();
@@ -513,6 +531,8 @@ namespace WaterMod
                 Transform PhysicsColliderTransform = PhysicsCollider.transform; PhysicsColliderTransform.parent = folder.transform;
                 PhysicsColliderTransform.localScale = new Vector3(2048f, 2048f, 2048f); PhysicsColliderTransform.localPosition = new Vector3(0f, -1024f, 0f);
                 PhysicsCollider.AddComponent<BoxCollider>();
+                _inst.waterGUI = new GameObject().AddComponent<WaterGUI>();
+                _inst.waterGUI.gameObject.SetActive(false);
             }
             catch (Exception e)
             {

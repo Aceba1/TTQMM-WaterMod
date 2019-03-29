@@ -136,7 +136,7 @@ namespace WaterMod
             m.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
 
             var e = ps.emission;
-            e.rateOverTime = 1f;
+            e.rateOverTime = .5f;
             e.rateOverDistance = 0.5f;
 
             var s = ps.shape;
