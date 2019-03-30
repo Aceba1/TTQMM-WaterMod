@@ -368,7 +368,7 @@ namespace WaterMod
         }
 
         bool CameraSubmerged = false;
-        FogMode fMode = RenderSettings.fogMode;
+        FogMode fM = RenderSettings.fogMode;
 
         private void Update()
         {
@@ -377,16 +377,18 @@ namespace WaterMod
                 if (Camera.main.transform.position.y < folder.transform.position.y)
                 {
                     CameraSubmerged = true;
-                    RenderSettings.skybox = null;
+                    ManTimeOfDay.inst.EnableSkyDome(false);
+                    //RenderSettings.skybox.color = new Color(0.2f, 0.5f, 0.6f, 0.91f);
+                    RenderSettings.fogColor = new Color(0.2f, 0.5f, 0.6f, 0.91f);
                     RenderSettings.fogMode = FogMode.Linear;
-                    RenderSettings.fogStartDistance = 10f;
-                    RenderSettings.fogEndDistance = 100f;
-                    RenderSettings.fogColor = new Color(0.15f, 0.5f, 0.65f, 0.9f);
+                    RenderSettings.fogStartDistance = 0f;
+                    RenderSettings.fogEndDistance = 64f;
+                    ManTimeOfDay.inst.EnableSkyDome(true);
                 }
                 else if (CameraSubmerged)
                 {
                     CameraSubmerged = false;
-                    RenderSettings.fogMode = fMode;
+                    RenderSettings.fogMode = fM;
                     ManTimeOfDay.inst.EnableSkyDome(true);
                 }
 
