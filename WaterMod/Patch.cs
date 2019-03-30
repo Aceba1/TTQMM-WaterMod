@@ -378,10 +378,10 @@ namespace WaterMod
                 {
                     CameraSubmerged = true;
                     RenderSettings.skybox = null;
-                    RenderSettings.fogColor = new Color(0.15f, 0.5f, 0.65f, 0.9f);
                     RenderSettings.fogMode = FogMode.Linear;
                     RenderSettings.fogStartDistance = 10f;
-                    RenderSettings.fogEndDistance = 200f;
+                    RenderSettings.fogEndDistance = 100f;
+                    RenderSettings.fogColor = new Color(0.15f, 0.5f, 0.65f, 0.9f);
                 }
                 else if (CameraSubmerged)
                 {
