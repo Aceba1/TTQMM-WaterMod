@@ -267,7 +267,7 @@ namespace WaterMod
             {
                 if (ManGameMode.inst.IsCurrentModeMultiplayer())
                 {
-                    if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                    if (!ManGameMode.inst.IsCurrent<ModeDeathmatch>())
                     {
                         return NetHeightSmooth;
                     }
@@ -413,7 +413,7 @@ namespace WaterMod
                     {
                         try
                         {
-                            if (ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                            if (!ManGameMode.inst.IsCurrent<ModeDeathmatch>())
                             {
                                 if (ManNetwork.IsHost)
                                 {
@@ -443,7 +443,7 @@ namespace WaterMod
                     }
 
                 }
-                if (flag && ManGameMode.inst.IsCurrent<ModeCoOpCreative>())
+                if (flag && !ManGameMode.inst.IsCurrent<ModeDeathmatch>())
                 {
                     NetHeightSmooth = NetHeightSmooth * 0.9f + NetworkHandler.ServerWaterHeight * 0.1f;
                 }
