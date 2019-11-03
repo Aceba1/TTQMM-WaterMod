@@ -184,7 +184,6 @@ namespace WaterMod
 
     public class SurfacePool
     {
-        public static int SurfaceEffectStartPoolSize = 100;
         public static bool CanGrow = true;
         public static int MaxGrow = 500;
         private static List<Item> FreeList;
@@ -195,16 +194,7 @@ namespace WaterMod
         {
             Count = 0;
             Available = 0;
-            FreeList = new List<Item>(SurfaceEffectStartPoolSize);
-            if (!WaterParticleHandler.UseParticleEffects)
-            {
-                return;
-            }
-            for (int i = 0; i < SurfaceEffectStartPoolSize; i++)
-            {
-                FreeList[i] = CreateNew();
-            }
-            Available = SurfaceEffectStartPoolSize;
+            FreeList = new List<Item>();
         }
 
         public static Item GetFromPool()
