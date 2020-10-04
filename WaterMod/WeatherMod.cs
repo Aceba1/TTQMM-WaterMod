@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using TTQMM_WeatherMod;
+/*using TTQMM_WeatherMod;
 
 namespace WaterMod
 {
@@ -10,4 +10,4 @@ namespace WaterMod
     {
         public static float RainWeight { get => (RainMaker.isRaining ? RainMaker.RainWeight : 0f); }
     }
-}
+}*/
