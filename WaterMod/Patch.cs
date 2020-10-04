@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using Harmony;
 using QModManager.Utility;
@@ -6,6 +6,8 @@ using ModHelper.Config;
 using UnityEngine;
 using Nuterra.NativeOptions;
 using UnityEngine.Events;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace WaterMod
 {
@@ -40,7 +42,7 @@ namespace WaterMod
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             ModConfig thisMod = new ModConfig();
-            
+
             thisMod.BindConfig<WaterParticleHandler>(null, "UseParticleEffects");
 
             WaterBuoyancy.Initiate();
@@ -520,7 +522,7 @@ namespace WaterMod
                 {
                     float dTime = Time.deltaTime;
                     float newHeight = RainFlood;
-                    newHeight += WeatherMod.RainWeight * RainWeightMultiplier * dTime;
+                    //newHeight += WeatherMod.RainWeight * RainWeightMultiplier * dTime;
                     newHeight *= 1f - RainDrainMultiplier * dTime;
                     RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp * dTime, FloodChangeClamp * dTime);
                 }
@@ -568,13 +570,27 @@ namespace WaterMod
                 */
                 if (material == null)
                 {
-                    material = new Material(Shader.Find("Standard"))
+                    var shader = Shader.Find("Standard");
+                    if (!shader)
+                    {
+                        IEnumerable<Shader> shaders = Resources.FindObjectsOfTypeAll<Shader>();
+                        shaders = shaders.Where(s => s.name == "Standard");
+                        shader = shaders.ElementAt(1);
+                    }
+                    material = new Material(shader)
                     {
                         renderQueue = 3000,
                         color = new Color(0.2f, 0.8f, 0.75f, 0.4f)
                     };
-                    material.SetFloat("_Mode", 2f); material.SetFloat("_Metallic", 0.6f); material.SetFloat("_Glossiness", 0.9f); material.SetInt("_SrcBlend", 5); material.SetInt("_DstBlend", 10); material.SetInt("_ZWrite", 0);
-                    material.DisableKeyword("_ALPHATEST_ON"); material.EnableKeyword("_ALPHABLEND_ON"); material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                    material.SetFloat("_Mode", 2f); 
+                    material.SetFloat("_Metallic", 0.6f); 
+                    material.SetFloat("_Glossiness", 0.9f); 
+                    material.SetInt("_SrcBlend", 5); 
+                    material.SetInt("_DstBlend", 10); 
+                    material.SetInt("_ZWrite", 0);
+                    material.DisableKeyword("_ALPHATEST_ON"); 
+                    material.EnableKeyword("_ALPHABLEND_ON"); 
+                    material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                 }
 
                 var folder = new GameObject("WaterObject");
