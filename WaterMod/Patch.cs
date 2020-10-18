@@ -36,10 +36,17 @@ namespace WaterMod
         public static KeyCode key;
         public static int key_int;
 
+        internal static AssetBundle assetBundle;
+        internal static string asm_path = Assembly.GetExecutingAssembly().Location.Replace("WaterMod.dll", "");
+        public static Material basic;
+        public static Material fancy;
+
         public static void Main()
         {
             var harmony = HarmonyInstance.Create("aceba1.ttmm.revived.water");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            assetBundle = AssetBundle.LoadFromFile(asm_path + "waterassets");
 
             ModConfig thisMod = new ModConfig();
 
@@ -62,7 +69,9 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "SubmergedTankDampeningYAddition");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampening");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampeningYAddition");
-            WaterBuoyancy._WeatherMod = ModExists("TTQMM WeatherMod");
+            thisMod.BindConfig<WaterBuoyancy>(null, "SelectedLook");
+
+            /*WaterBuoyancy._WeatherMod = ModExists("TTQMM WeatherMod");
             if (WaterBuoyancy._WeatherMod)
             {
                 Debug.Log("Found WeatherMod!");
@@ -70,7 +79,8 @@ namespace WaterMod
                 thisMod.BindConfig<WaterBuoyancy>(null, "RainDrainMultiplier");
                 thisMod.BindConfig<WaterBuoyancy>(null, "FloodChangeClamp");
                 thisMod.BindConfig<WaterBuoyancy>(null, "FloodHeightMultiplier");
-            }
+            }*/
+
             _thisMod = thisMod;
 
 
@@ -83,39 +93,52 @@ namespace WaterMod
             UseParticleEffects.onValueSaved.AddListener(() => { WaterParticleHandler.UseParticleEffects = UseParticleEffects.SavedValue; });
             Height = new OptionRange("Height level", ModName, WaterBuoyancy.Height, -75f, 100f, 1f);
             Height.onValueSaved.AddListener(() => { WaterBuoyancy.Height = Height.SavedValue; });
-            Density = new OptionRange("| Density", ModName, WaterBuoyancy.Density, -16, 16, 0.25f);
+
+            var WaterProperties = ModName + " - Water properties";
+            Density = new OptionRange("Density", WaterProperties, WaterBuoyancy.Density, -16, 16, 0.25f);
             Density.onValueSaved.AddListener(() => { WaterBuoyancy.Density = Density.SavedValue; });
-            FanJetMultiplier = new OptionRange("| Fan jet Multiplier", ModName, WaterBuoyancy.FanJetMultiplier, 0f, 4f, .05f);
+            FanJetMultiplier = new OptionRange("Fan jet Multiplier", WaterProperties, WaterBuoyancy.FanJetMultiplier, 0f, 4f, .05f);
             FanJetMultiplier.onValueSaved.AddListener(() => { WaterBuoyancy.FanJetMultiplier = FanJetMultiplier.SavedValue; });
-            ResourceBuoyancy = new OptionRange("| Resource Buoyancy", ModName, WaterBuoyancy.ResourceBuoyancyMultiplier, 0f, 4f, .05f);
+            ResourceBuoyancy = new OptionRange("Resource Buoyancy", WaterProperties, WaterBuoyancy.ResourceBuoyancyMultiplier, 0f, 4f, .05f);
             ResourceBuoyancy.onValueSaved.AddListener(() => { WaterBuoyancy.ResourceBuoyancyMultiplier = ResourceBuoyancy.SavedValue; });
-            BulletDampener = new OptionRange("| Bullet Dampening", ModName, WaterBuoyancy.BulletDampener, 0f, 1E-4f, 1E-8f);
+            BulletDampener = new OptionRange("Bullet Dampening", WaterProperties, WaterBuoyancy.BulletDampener, 0f, 1E-4f, 1E-8f);
             BulletDampener.onValueSaved.AddListener(() => { WaterBuoyancy.BulletDampener = BulletDampener.SavedValue; });
-            MissileDampener = new OptionRange("| Missile Dampening", ModName, WaterBuoyancy.MissileDampener, 0f, 0.1f, 0.003f);
+            MissileDampener = new OptionRange("Missile Dampening", WaterProperties, WaterBuoyancy.MissileDampener, 0f, 0.1f, 0.003f);
             MissileDampener.onValueSaved.AddListener(() => { WaterBuoyancy.MissileDampener = MissileDampener.SavedValue; });
-            LaserFraction = new OptionRange("| Laser Slowdown", ModName, WaterBuoyancy.LaserFraction, 0f, 0.5f, 0.025f);
+            LaserFraction = new OptionRange("Laser Slowdown", WaterProperties, WaterBuoyancy.LaserFraction, 0f, 0.5f, 0.025f);
             LaserFraction.onValueSaved.AddListener(() => { WaterBuoyancy.LaserFraction = LaserFraction.SavedValue; });
-            SurfaceSkinning = new OptionRange("| Surface Skinning", ModName, WaterBuoyancy.SurfaceSkinning, -0.5f, 0.5f, 0.05f);
+            SurfaceSkinning = new OptionRange("Surface Skinning", WaterProperties, WaterBuoyancy.SurfaceSkinning, -0.5f, 0.5f, 0.05f);
             SurfaceSkinning.onValueSaved.AddListener(() => { WaterBuoyancy.SurfaceSkinning = SurfaceSkinning.SavedValue; });
-            SubmergedTankDampening = new OptionRange("| Submerged Tank Dampening", ModName, WaterBuoyancy.SubmergedTankDampening, 0f, 2f, 0.05f);
+            SubmergedTankDampening = new OptionRange("Submerged Tank Dampening", WaterProperties, WaterBuoyancy.SubmergedTankDampening, 0f, 2f, 0.05f);
             SubmergedTankDampening.onValueSaved.AddListener(() => { WaterBuoyancy.SubmergedTankDampening = SubmergedTankDampening.SavedValue; });
-            SubmergedTankDampeningY = new OptionRange("| Submerged Tank Dampening Y addition", ModName, WaterBuoyancy.SubmergedTankDampeningYAddition, -1f, 1f, 0.05f);
+            SubmergedTankDampeningY = new OptionRange("Submerged Tank Dampening Y addition", WaterProperties, WaterBuoyancy.SubmergedTankDampeningYAddition, -1f, 1f, 0.05f);
             SubmergedTankDampeningY.onValueSaved.AddListener(() => { WaterBuoyancy.SubmergedTankDampeningYAddition = SubmergedTankDampeningY.SavedValue; });
-            SurfaceTankDampening = new OptionRange("| Surface Tank Dampening", ModName, WaterBuoyancy.SurfaceTankDampening, 0f, 2f, 0.05f);
+            SurfaceTankDampening = new OptionRange("Surface Tank Dampening", WaterProperties, WaterBuoyancy.SurfaceTankDampening, 0f, 2f, 0.05f);
             SurfaceTankDampening.onValueSaved.AddListener(() => { WaterBuoyancy.SurfaceTankDampening = SurfaceTankDampening.SavedValue; });
-            SurfaceTankDampeningY = new OptionRange("| Surface Tank Dampening Y addition", ModName, WaterBuoyancy.SurfaceTankDampeningYAddition, -1f, 1f, 0.05f);
+            SurfaceTankDampeningY = new OptionRange("Surface Tank Dampening Y addition", WaterProperties, WaterBuoyancy.SurfaceTankDampeningYAddition, -1f, 1f, 0.05f);
             SurfaceTankDampeningY.onValueSaved.AddListener(() => { WaterBuoyancy.SurfaceTankDampeningYAddition = SurfaceTankDampeningY.SavedValue; });
-            if (WaterBuoyancy._WeatherMod)
+
+            var WaterLook = ModName + " - Water look";
+            var waterLook = new OptionList<WaterBuoyancy.WaterLook>("Water look", WaterLook, WaterBuoyancy.waterLooks, WaterBuoyancy.SelectedLook);
+            waterLook.onValueSaved.AddListener(() =>
             {
-                RainWeightMultiplier = new OptionRange("WeatherMod | Rain Weight Multiplier", ModName, WaterBuoyancy.RainWeightMultiplier, 0, 0.25f, 0.01f);
+                WaterBuoyancy.UpdateLook(waterLook.Selected);
+                WaterBuoyancy.SelectedLook = waterLook.SavedValue;
+            });
+            WaterBuoyancy.UpdateLook(WaterBuoyancy.waterLooks[WaterBuoyancy.SelectedLook]);
+
+            /*if (WaterBuoyancy._WeatherMod)
+            {
+                var WeatherProperties = ModName + " - Weather mod";
+                RainWeightMultiplier = new OptionRange("Rain Weight Multiplier", WeatherProperties, WaterBuoyancy.RainWeightMultiplier, 0, 0.25f, 0.01f);
                 RainWeightMultiplier.onValueSaved.AddListener(() => { WaterBuoyancy.RainWeightMultiplier = RainWeightMultiplier.SavedValue; });
-                RainDrainMultiplier = new OptionRange("WeatherMod | Rain Drain Multiplier", ModName, WaterBuoyancy.RainDrainMultiplier, 0, 0.25f, 0.01f);
+                RainDrainMultiplier = new OptionRange("Rain Drain Multiplier", WeatherProperties, WaterBuoyancy.RainDrainMultiplier, 0, 0.25f, 0.01f);
                 RainDrainMultiplier.onValueSaved.AddListener(() => { WaterBuoyancy.RainDrainMultiplier = RainDrainMultiplier.SavedValue; });
-                FloodRateClamp = new OptionRange("WeatherMod | Flood rate Clamp", ModName, WaterBuoyancy.FloodChangeClamp, 0, 0.08f, 0.001f);
+                FloodRateClamp = new OptionRange("Flood rate Clamp", WeatherProperties, WaterBuoyancy.FloodChangeClamp, 0, 0.08f, 0.001f);
                 FloodRateClamp.onValueSaved.AddListener(() => { WaterBuoyancy.FloodChangeClamp = FloodRateClamp.SavedValue; });
-                FloodHeightMultiplier = new OptionRange("WeatherMod | Flood Height Multiplier", ModName, WaterBuoyancy.FloodHeightMultiplier, 0, 50f, 1f);
+                FloodHeightMultiplier = new OptionRange("Flood Height Multiplier", WeatherProperties, WaterBuoyancy.FloodHeightMultiplier, 0, 50f, 1f);
                 FloodHeightMultiplier.onValueSaved.AddListener(() => { WaterBuoyancy.FloodHeightMultiplier = FloodHeightMultiplier.SavedValue; });
-            }
+            }*/
         }
         public static OptionKey GUIMenu;
         public static OptionToggle IsWaterActive;
@@ -309,6 +332,7 @@ namespace WaterMod
             RainDrainMultiplier = 0.06f,
             FloodChangeClamp = 0.002f,
             FloodHeightMultiplier = 15f;
+        public static int SelectedLook = 0;
 
         private static float NetHeightSmooth = 0f;
 
@@ -347,6 +371,7 @@ namespace WaterMod
         public static bool _WeatherMod;
         private bool ShowGUI = false;
         private WaterGUI waterGUI;
+        public static GameObject surface;
 
         internal class WaterGUI : MonoBehaviour
         {
@@ -455,10 +480,10 @@ namespace WaterMod
                     {
                         ManTimeOfDay.inst.EnableSkyDome(true);
                     }
-                    ManTimeOfDay.inst.EnableSkyDome(false);
+                    //ManTimeOfDay.inst.EnableSkyDome(false);
                     //RenderSettings.skybox.color = new Color(0.2f, 0.5f, 0.6f, 0.91f);
-                    RenderSettings.fogColor = new Color(0.3f, 0.5f, 0.65f, 0.3f);
-                    RenderSettings.ambientLight = new Color(0.3f, 0.5f, 0.6f, 0.8f);
+                    RenderSettings.fogColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
+                    RenderSettings.ambientLight = new Color(0.3f, 0.5f, 0.75f, 0.8f);
                     RenderSettings.fogMode = FogMode.Linear;
                     RenderSettings.fogStartDistance = 0f;
                     RenderSettings.fogEndDistance = 100f;
@@ -518,14 +543,14 @@ namespace WaterMod
                     NetHeightSmooth = NetHeightSmooth * 0.9f + NetworkHandler.ServerWaterHeight * 0.1f;
                 }
                 folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
-                if (_WeatherMod && !flag)
+                /*if (_WeatherMod && !flag)
                 {
                     float dTime = Time.deltaTime;
                     float newHeight = RainFlood;
                     //newHeight += WeatherMod.RainWeight * RainWeightMultiplier * dTime;
                     newHeight *= 1f - RainDrainMultiplier * dTime;
                     RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp * dTime, FloodChangeClamp * dTime);
-                }
+                }*/
             }
             catch { }
         }
@@ -536,6 +561,8 @@ namespace WaterMod
         {
             PistonHeart = !PistonHeart;
         }
+
+        public static List<WaterLook> waterLooks = new List<WaterLook>();
 
         public static void Initiate()
         {
@@ -556,53 +583,81 @@ namespace WaterMod
                 }
                 CameraFilter.Apply();
 
-                Material material = null;
-                /*
-                Material[] search = Resources.FindObjectsOfTypeAll<Material>();
-                for (int i = 0; i < search.Length; i++)
+                Material fancyWater = new Material(QPatch.assetBundle.LoadAsset<Shader>("CartoonWater"));
+                fancyWater.SetFloat("_UseWorldCoordinates", 1f);
+                fancyWater.SetFloat("_RippleDensity", 0.25f);
+                fancyWater.SetFloat("_RippleCutoff", 3.5f);
+                fancyWater.SetFloat("_WaveAmplitude", 5f);
+                fancyWater.SetFloat("_Tessellation", 7.5f);
+
+                Mesh fancyMesh = new Mesh();
+                fancyMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+                fancyMesh = OBJParser.MeshFromFile("plane.obj", fancyMesh);
+
+                waterLooks.Add(new WaterLook()
                 {
-                    if (search[i].name.StartsWith("Mat_Pickup_Resource_RodiusCapsule"))
-                    {
-                        material = search[i];
-                        break;
-                    }
-                }
-                */
-                if (material == null)
+                    name = "Fancy",
+                    material = fancyWater,
+                    mesh = fancyMesh
+                });
+
+                Material fancyWavelessWater = new Material(QPatch.assetBundle.LoadAllAssets<Shader>().First(s => s.name == "Shader Forge/CartoonWaterWaveless"));
+                fancyWavelessWater.SetFloat("_UseWorldCoordinates", 1f);
+                fancyWavelessWater.SetFloat("_RippleDensity", 0.25f);
+                fancyWavelessWater.SetFloat("_RippleCutoff", 3.5f);      
+
+                var tempGO = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                Mesh plane = Instantiate(tempGO.GetComponent<MeshFilter>().mesh);
+
+                waterLooks.Add(new WaterLook()
                 {
-                    var shader = Shader.Find("Standard");
-                    if (!shader)
-                    {
+                    name = "Fancy (waveless)",
+                    material = fancyWavelessWater,
+                    mesh = plane
+                });
+
+                var shader = Shader.Find("Standard");
+                if (!shader)
+                {
                         IEnumerable<Shader> shaders = Resources.FindObjectsOfTypeAll<Shader>();
-                        shaders = shaders.Where(s => s.name == "Standard");
-                        shader = shaders.ElementAt(1);
-                    }
-                    material = new Material(shader)
-                    {
-                        renderQueue = 3000,
-                        color = new Color(0.2f, 0.8f, 0.75f, 0.4f)
-                    };
-                    material.SetFloat("_Mode", 2f); 
-                    material.SetFloat("_Metallic", 0.6f); 
-                    material.SetFloat("_Glossiness", 0.9f); 
-                    material.SetInt("_SrcBlend", 5); 
-                    material.SetInt("_DstBlend", 10); 
-                    material.SetInt("_ZWrite", 0);
-                    material.DisableKeyword("_ALPHATEST_ON"); 
-                    material.EnableKeyword("_ALPHABLEND_ON"); 
-                    material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                    shaders = shaders.Where(s => s.name == "Standard");
+                    shader = shaders.ElementAt(1);
                 }
+                var defaultWater = new Material(shader)
+                {
+                    renderQueue = 3000,
+                    color = new Color(0.2f, 0.8f, 0.75f, 0.4f)
+                };
+                defaultWater.SetFloat("_Mode", 2f);
+                defaultWater.SetFloat("_Metallic", 0.6f);
+                defaultWater.SetFloat("_Glossiness", 0.9f);
+                defaultWater.SetInt("_SrcBlend", 5);
+                defaultWater.SetInt("_DstBlend", 10);
+                defaultWater.SetInt("_ZWrite", 0);
+                defaultWater.DisableKeyword("_ALPHATEST_ON");
+                defaultWater.EnableKeyword("_ALPHABLEND_ON");
+                defaultWater.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+
+                waterLooks.Add(new WaterLook()
+                {
+                    name = "Default",
+                    material = defaultWater,
+                    mesh = plane
+                });
 
                 var folder = new GameObject("WaterObject");
                 folder.transform.position = Vector3.zero;
 
                 WaterBuoyancy.folder = folder;
 
-                GameObject Surface = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                Destroy(Surface.GetComponent<CapsuleCollider>());
+                GameObject Surface = tempGO;
+                Destroy(Surface.GetComponent<MeshCollider>());
                 Transform component = Surface.transform; component.parent = folder.transform;
+                Surface.GetComponent<Renderer>().material = defaultWater;
+
+                WaterBuoyancy.surface = Surface;
+
                 component.localScale = new Vector3(2048f, 0.075f, 2048f);
-                Surface.GetComponent<Renderer>().material = material;
 
                 GameObject PhysicsTrigger = new GameObject("PhysicsTrigger");
                 Transform PhysicsTriggerTransform = PhysicsTrigger.transform; PhysicsTriggerTransform.parent = folder.transform;
@@ -641,6 +696,12 @@ namespace WaterMod
             {
                 Debug.LogException(e);
             }
+        }
+
+        public static void UpdateLook(WaterLook waterLook)
+        {
+            surface.GetComponent<Renderer>().material = waterLook.material;
+            surface.GetComponent<MeshFilter>().mesh = waterLook.mesh;
         }
 
         public class WaterEffect : MonoBehaviour
@@ -1116,6 +1177,18 @@ namespace WaterMod
             LaserProjectile = 2,
             MissileProjectile = 3,
             NormalProjectile = 1
+        }
+
+        public struct WaterLook
+        {
+            public string name;
+            public Mesh mesh;
+            public Material material;
+
+            public override string ToString()
+            {
+                return this.name;
+            }
         }
     }
 }
