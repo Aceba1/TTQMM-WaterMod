@@ -63,6 +63,10 @@
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
@@ -86,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NetworkHandler.cs" />
+    <Compile Include="OBJParser.cs" />
     <Compile Include="WaterParticleHandler.cs" />
     <Compile Include="Patch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -95,13 +100,19 @@
     <None Include="mod.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="plane.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="waterassets">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del *.pdb
 @setlocal enableextensions enabledelayedexpansion
 
-set modpath="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\$(SolutionName)"
+set modpath="D:\Program Files\Steam\steamapps\common\TerraTech\QMods\$(SolutionName)"
 
 if not exist !modpath! (
 echo Creating directory at game's QMods folder
