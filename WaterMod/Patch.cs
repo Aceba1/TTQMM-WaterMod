@@ -1,3 +1,5 @@
+// https://github.com/fuqunaga/RapidGUI
+
 using System;
 using System.Reflection;
 using Harmony;
@@ -8,6 +10,7 @@ using Nuterra.NativeOptions;
 using UnityEngine.Events;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 
 namespace WaterMod
 {
@@ -38,6 +41,7 @@ namespace WaterMod
 
         internal static AssetBundle assetBundle;
         internal static string asm_path = Assembly.GetExecutingAssembly().Location.Replace("WaterMod.dll", "");
+        internal static string assets_path = Path.Combine(asm_path, "Assets");
         public static Material basic;
         public static Material fancy;
 
@@ -46,7 +50,7 @@ namespace WaterMod
             var harmony = HarmonyInstance.Create("aceba1.ttmm.revived.water");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            assetBundle = AssetBundle.LoadFromFile(asm_path + "waterassets");
+            assetBundle = AssetBundle.LoadFromFile(Path.Combine(assets_path, "waterassets"));
 
             ModConfig thisMod = new ModConfig();
 
@@ -315,6 +319,7 @@ namespace WaterMod
 
     internal class WaterBuoyancy : MonoBehaviour
     {
+        private static FieldInfo m_Sky = typeof(ManTimeOfDay).GetField("m_Sky", BindingFlags.NonPublic | BindingFlags.Instance);
         public static Texture2D CameraFilter;
 
         public static float Height = -25f,
@@ -459,6 +464,9 @@ namespace WaterMod
 
         bool CameraSubmerged = false;
         FogMode fM = RenderSettings.fogMode;
+        TOD_FogType todFt;
+        TOD_AmbientType todAt;
+        float fDens = RenderSettings.fogDensity;
 
         private void Update()
         {
@@ -470,29 +478,38 @@ namespace WaterMod
             }
             try
             {
-                if (Camera.main.transform.position.y < folder.transform.position.y)
+                var sky = m_Sky.GetValue(ManTimeOfDay.inst) as TOD_Sky;
+                if (Camera.main.transform.position.y < HeightCalc)
                 {
                     if (!CameraSubmerged)
                     {
                         CameraSubmerged = true;
+
+                        RenderSettings.fogDensity = 5f;
+                        RenderSettings.fogColor = new Color(0, 0.2404828f, 1f, 0.5f);
+                        RenderSettings.ambientLight = new Color(0, 0.2404828f, 1f, 0.5f);
+                        RenderSettings.fog = true;
+
+                        RenderSettings.fogMode = FogMode.Linear;
+                        RenderSettings.fogStartDistance = 0f;
+                        RenderSettings.fogEndDistance = 1000f;
+                        todFt = sky.Fog.Mode;
+                        todAt = sky.Ambient.Mode;
                     }
-                    else
-                    {
-                        ManTimeOfDay.inst.EnableSkyDome(true);
-                    }
-                    //ManTimeOfDay.inst.EnableSkyDome(false);
-                    //RenderSettings.skybox.color = new Color(0.2f, 0.5f, 0.6f, 0.91f);
-                    RenderSettings.fogColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
-                    RenderSettings.ambientLight = new Color(0.3f, 0.5f, 0.75f, 0.8f);
-                    RenderSettings.fogMode = FogMode.Linear;
-                    RenderSettings.fogStartDistance = 0f;
-                    RenderSettings.fogEndDistance = 100f;
                 }
                 else if (CameraSubmerged)
                 {
                     CameraSubmerged = false;
                     RenderSettings.fogMode = fM;
-                    ManTimeOfDay.inst.EnableSkyDome(true);
+                    RenderSettings.fogDensity = fDens;
+                    sky.Fog.Mode = todFt;
+                    sky.Ambient.Mode = todAt;
+                }
+
+                if(CameraSubmerged)
+                {
+                    sky.Fog.Mode = TOD_FogType.None;
+                    sky.Ambient.Mode = TOD_AmbientType.None;
                 }
 
                 ManNetwork mp = ManNetwork.inst;
@@ -619,7 +636,7 @@ namespace WaterMod
                 var shader = Shader.Find("Standard");
                 if (!shader)
                 {
-                        IEnumerable<Shader> shaders = Resources.FindObjectsOfTypeAll<Shader>();
+                    IEnumerable<Shader> shaders = Resources.FindObjectsOfTypeAll<Shader>();
                     shaders = shaders.Where(s => s.name == "Standard");
                     shader = shaders.ElementAt(1);
                 }

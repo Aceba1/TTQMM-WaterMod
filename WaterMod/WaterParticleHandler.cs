@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 namespace WaterMod
 {
     public class WaterParticleHandler
     {
-        public static Texture2D blurredSprite;
         public static Material blurredMat;
         public static Material filledMat;
         public static Material spriteMaterial;
@@ -41,7 +41,6 @@ namespace WaterMod
 
             oSplash.transform.parent = FXFolder.transform;
             oSurface.transform.parent = FXFolder.transform;
-            CreateBlurredSprite();
             CreateSpriteMaterial();
             CreateSplash();
             CreateSurface();
@@ -64,21 +63,10 @@ namespace WaterMod
             spriteMaterial = new Material(material);
 
             blurredMat = new Material(material);
-            blurredMat.mainTexture = blurredSprite;
-        }
-
-        private static void CreateBlurredSprite()
-        {
-            int radius = 8;
-            blurredSprite = new Texture2D(radius * 2, radius * 2);
-            for (int y = 0; y < radius * 2; y++)
-            {
-                for (int x = 0; x < radius * 2; x++)
-                {
-                    blurredSprite.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(0.8f - Mathf.Sqrt((y - radius) * (y - radius) + (x - radius) * (x - radius)) / radius)));
-                }
-            }
-            blurredSprite.Apply();
+            var tex = new Texture2D(0, 0);
+            tex.LoadImage(File.ReadAllBytes(Path.Combine(QPatch.assets_path, "Splash.png")));
+            tex.Apply();
+            blurredMat.mainTexture = tex;
         }
 
         private static void CreateSplash()
