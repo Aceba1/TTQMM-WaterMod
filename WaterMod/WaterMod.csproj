@@ -106,15 +106,15 @@
     <Compile Include="WeatherMod.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\plane.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="mod.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="plane.obj">
+    <Content Include="Assets\waterassets">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Assets\waterassets">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\Splash.png">

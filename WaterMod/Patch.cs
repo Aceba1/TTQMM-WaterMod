@@ -655,7 +655,7 @@ namespace WaterMod
 
                 Mesh fancyMesh = new Mesh();
                 fancyMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-                fancyMesh = OBJParser.MeshFromFile("plane.obj", fancyMesh);
+                fancyMesh = OBJParser.MeshFromFile("Assets/plane.obj", fancyMesh);
 
                 waterLooks.Add(new WaterLook()
                 {
