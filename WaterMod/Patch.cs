@@ -600,38 +600,8 @@ namespace WaterMod
                 }
                 CameraFilter.Apply();
 
-                Material fancyWater = new Material(QPatch.assetBundle.LoadAsset<Shader>("CartoonWater"));
-                fancyWater.SetFloat("_UseWorldCoordinates", 1f);
-                fancyWater.SetFloat("_RippleDensity", 0.25f);
-                fancyWater.SetFloat("_RippleCutoff", 3.5f);
-                fancyWater.SetFloat("_WaveAmplitude", 5f);
-                fancyWater.SetFloat("_Tessellation", 7.5f);
-
-                Mesh fancyMesh = new Mesh();
-                fancyMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-                fancyMesh = OBJParser.MeshFromFile("plane.obj", fancyMesh);
-
-                waterLooks.Add(new WaterLook()
-                {
-                    name = "Fancy",
-                    material = fancyWater,
-                    mesh = fancyMesh
-                });
-
-                Material fancyWavelessWater = new Material(QPatch.assetBundle.LoadAllAssets<Shader>().First(s => s.name == "Shader Forge/CartoonWaterWaveless"));
-                fancyWavelessWater.SetFloat("_UseWorldCoordinates", 1f);
-                fancyWavelessWater.SetFloat("_RippleDensity", 0.25f);
-                fancyWavelessWater.SetFloat("_RippleCutoff", 3.5f);      
-
                 var tempGO = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 Mesh plane = Instantiate(tempGO.GetComponent<MeshFilter>().mesh);
-
-                waterLooks.Add(new WaterLook()
-                {
-                    name = "Fancy (waveless)",
-                    material = fancyWavelessWater,
-                    mesh = plane
-                });
 
                 var shader = Shader.Find("Standard");
                 if (!shader)
@@ -661,6 +631,39 @@ namespace WaterMod
                     material = defaultWater,
                     mesh = plane
                 });
+
+
+                Material fancyWavelessWater = new Material(QPatch.assetBundle.LoadAllAssets<Shader>().First(s => s.name == "Shader Forge/CartoonWaterWaveless"));
+                fancyWavelessWater.SetFloat("_UseWorldCoordinates", 1f);
+                fancyWavelessWater.SetFloat("_RippleDensity", 0.25f);
+                fancyWavelessWater.SetFloat("_RippleCutoff", 3.5f);
+
+                waterLooks.Add(new WaterLook()
+                {
+                    name = "Fancy (waveless)",
+                    material = fancyWavelessWater,
+                    mesh = plane
+                });
+
+
+                Material fancyWater = new Material(QPatch.assetBundle.LoadAsset<Shader>("CartoonWater"));
+                fancyWater.SetFloat("_UseWorldCoordinates", 1f);
+                fancyWater.SetFloat("_RippleDensity", 0.25f);
+                fancyWater.SetFloat("_RippleCutoff", 3.5f);
+                fancyWater.SetFloat("_WaveAmplitude", 5f);
+                fancyWater.SetFloat("_Tessellation", 7.5f);
+
+                Mesh fancyMesh = new Mesh();
+                fancyMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+                fancyMesh = OBJParser.MeshFromFile("plane.obj", fancyMesh);
+
+                waterLooks.Add(new WaterLook()
+                {
+                    name = "Fancy",
+                    material = fancyWater,
+                    mesh = fancyMesh
+                });
+                
 
                 var folder = new GameObject("WaterObject");
                 folder.transform.position = Vector3.zero;
