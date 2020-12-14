@@ -74,6 +74,7 @@ namespace WaterMod
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampening");
             thisMod.BindConfig<WaterBuoyancy>(null, "SurfaceTankDampeningYAddition");
             thisMod.BindConfig<WaterBuoyancy>(null, "SelectedLook");
+            thisMod.BindConfig<WaterBuoyancy>(null, "AbyssDepth");
 
             /*WaterBuoyancy._WeatherMod = ModExists("TTQMM WeatherMod");
             if (WaterBuoyancy._WeatherMod)
@@ -130,6 +131,9 @@ namespace WaterMod
                 WaterBuoyancy.SelectedLook = waterLook.SavedValue;
             });
             WaterBuoyancy.UpdateLook(WaterBuoyancy.waterLooks[WaterBuoyancy.SelectedLook]);
+
+            var waterAbyssDepth = new OptionRange("Abyss depth", WaterLook, WaterBuoyancy.AbyssDepth);
+            waterAbyssDepth.onValueSaved.AddListener(() => { WaterBuoyancy.AbyssDepth = waterAbyssDepth.SavedValue; });
 
             /*if (WaterBuoyancy._WeatherMod)
             {
@@ -336,7 +340,9 @@ namespace WaterMod
             RainWeightMultiplier = 0.06f,
             RainDrainMultiplier = 0.06f,
             FloodChangeClamp = 0.002f,
-            FloodHeightMultiplier = 15f;
+            FloodHeightMultiplier = 15f,
+            AbyssDepth = 50f;
+            
         public static int SelectedLook = 0;
 
         private static float NetHeightSmooth = 0f;
@@ -467,6 +473,33 @@ namespace WaterMod
         TOD_FogType todFt;
         TOD_AmbientType todAt;
         float fDens = RenderSettings.fogDensity;
+        Color todFogColor;
+        Color fogColor = RenderSettings.fogColor;
+        Color ambientLight = RenderSettings.ambientLight;
+
+        static Color underwaterColor = new Color(0, 0.2404828f, 1f, 0.5f);
+
+        Gradient dayFogColors;
+        Gradient nightFogColors;
+        Gradient dayLightColors;
+        Gradient nightLightColors;
+        Gradient daySkyColors;
+        Gradient nightSkyColors;
+        Gradient underWaterSkyColors = new Gradient()
+        {
+            alphaKeys = new GradientAlphaKey[]
+            {
+                new GradientAlphaKey(1f, 0f),
+                new GradientAlphaKey(1f, 1f)
+            },
+
+            colorKeys = new GradientColorKey[]
+            {
+                new GradientColorKey(underwaterColor, 0f),
+                new GradientColorKey(underwaterColor, 1f),
+            }
+        };
+
 
         private void Update()
         {
@@ -484,17 +517,24 @@ namespace WaterMod
                     if (!CameraSubmerged)
                     {
                         CameraSubmerged = true;
+                        fogColor = RenderSettings.fogColor;
+                        ambientLight = RenderSettings.ambientLight;
 
                         RenderSettings.fogDensity = 5f;
-                        RenderSettings.fogColor = new Color(0, 0.2404828f, 1f, 0.5f);
-                        RenderSettings.ambientLight = new Color(0, 0.2404828f, 1f, 0.5f);
                         RenderSettings.fog = true;
-
                         RenderSettings.fogMode = FogMode.Linear;
                         RenderSettings.fogStartDistance = 0f;
-                        RenderSettings.fogEndDistance = 1000f;
+                        RenderSettings.fogEndDistance = 40f;
+
+                        todFogColor = sky.FogColor;
                         todFt = sky.Fog.Mode;
                         todAt = sky.Ambient.Mode;
+                        dayFogColors = sky.Day.FogColor;
+                        nightFogColors = sky.Night.FogColor;
+                        daySkyColors = sky.Day.SkyColor;
+                        nightSkyColors = sky.Night.SkyColor;
+                        dayLightColors = sky.Day.LightColor;
+                        nightLightColors = sky.Night.LightColor;
                     }
                 }
                 else if (CameraSubmerged)
@@ -503,13 +543,37 @@ namespace WaterMod
                     RenderSettings.fogMode = fM;
                     RenderSettings.fogDensity = fDens;
                     sky.Fog.Mode = todFt;
+
                     sky.Ambient.Mode = todAt;
+                    RenderSettings.fogColor = fogColor;
+                    RenderSettings.ambientLight = ambientLight;
+
+                    sky.Day.FogColor = dayFogColors;
+                    sky.Night.FogColor = nightFogColors;
+                    sky.Day.SkyColor = daySkyColors;
+                    sky.Night.SkyColor = nightSkyColors;
+                    sky.Day.LightColor = dayLightColors;
+                    sky.Night.LightColor = nightLightColors;
+                    sky.m_UseTerraTechBiomeData = true;
                 }
 
                 if(CameraSubmerged)
                 {
+                    sky.m_UseTerraTechBiomeData = false;
                     sky.Fog.Mode = TOD_FogType.None;
                     sky.Ambient.Mode = TOD_AmbientType.None;
+
+                    var multiplier = Mathf.Approximately(AbyssDepth, 0) ? 1 : 1 - (Mathf.Max(HeightCalc - Camera.main.transform.position.y, 0) / AbyssDepth);
+                    var abyssColor = underwaterColor * multiplier;//Color.Lerp(underwaterColor, Color.black, multiplier);
+                    abyssColor.a = 1f;
+                    RenderSettings.fogColor = abyssColor;
+                    RenderSettings.ambientLight = abyssColor;
+                    RenderSettings.ambientGroundColor = abyssColor;
+                    RenderSettings.ambientIntensity = 1 - multiplier;
+
+                    underWaterSkyColors.colorKeys[0].color = underWaterSkyColors.colorKeys[1].color = abyssColor;
+
+                    sky.Day.FogColor = sky.Night.FogColor = sky.Day.LightColor = sky.Night.LightColor = sky.Day.SkyColor = sky.Night.SkyColor = underWaterSkyColors;
                 }
 
                 ManNetwork mp = ManNetwork.inst;
