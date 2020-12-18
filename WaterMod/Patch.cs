@@ -473,7 +473,6 @@ namespace WaterMod
         TOD_FogType todFt;
         TOD_AmbientType todAt;
         float fDens = RenderSettings.fogDensity;
-        Color todFogColor;
         Color fogColor = RenderSettings.fogColor;
         Color ambientLight = RenderSettings.ambientLight;
 
@@ -526,7 +525,6 @@ namespace WaterMod
                         RenderSettings.fogStartDistance = 0f;
                         RenderSettings.fogEndDistance = 40f;
 
-                        todFogColor = sky.FogColor;
                         todFt = sky.Fog.Mode;
                         todAt = sky.Ambient.Mode;
                         dayFogColors = sky.Day.FogColor;
@@ -564,7 +562,7 @@ namespace WaterMod
                     sky.Ambient.Mode = TOD_AmbientType.None;
 
                     var multiplier = Mathf.Approximately(AbyssDepth, 0) ? 1 : 1 - (Mathf.Max(HeightCalc - Camera.main.transform.position.y, 0) / AbyssDepth);
-                    var abyssColor = underwaterColor * multiplier;//Color.Lerp(underwaterColor, Color.black, multiplier);
+                    var abyssColor = underwaterColor * multiplier;
                     abyssColor.a = 1f;
                     RenderSettings.fogColor = abyssColor;
                     RenderSettings.ambientLight = abyssColor;
