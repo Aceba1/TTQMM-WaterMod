@@ -2,7 +2,7 @@
 
 using System;
 using System.Reflection;
-using Harmony;
+using HarmonyLib;
 using QModManager.Utility;
 using ModHelper.Config;
 using UnityEngine;
@@ -47,7 +47,7 @@ namespace WaterMod
 
         public static void Main()
         {
-            var harmony = HarmonyInstance.Create("aceba1.ttmm.revived.water");
+            var harmony = new Harmony("aceba1.ttmm.revived.water");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             assetBundle = AssetBundle.LoadFromFile(Path.Combine(assets_path, "waterassets"));
