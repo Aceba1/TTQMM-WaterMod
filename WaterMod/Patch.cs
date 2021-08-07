@@ -178,6 +178,7 @@ namespace WaterMod
         [HarmonyPatch("OnPool")]
         private class PatchBlock
         {
+            [HarmonyPostfix]
             private static void Postfix(TankBlock __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterBlock>();
@@ -199,6 +200,7 @@ namespace WaterMod
         [HarmonyPatch("OnRecycle")]
         private class TankBlockRecycle
         {
+            [HarmonyPostfix]
             private static void Postfix(TankBlock __instance)
             {
                 try
@@ -213,6 +215,7 @@ namespace WaterMod
         [HarmonyPatch("OnPool")]
         private class PatchTank
         {
+            [HarmonyPostfix]
             private static void Postfix(Tank __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterTank>();
@@ -223,6 +226,7 @@ namespace WaterMod
         [HarmonyPatch(typeof(Projectile), "OnPool")]
         private class PatchProjectileSpawn
         {
+            [HarmonyPostfix]
             private static void Postfix(Projectile __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
@@ -244,73 +248,11 @@ namespace WaterMod
             }
         }
 
-        //[HarmonyPatch(typeof(MissileProjectile), "Fire")]
-        //private class PatchMissile
-        //{
-        //    private static void Prefix(MissileProjectile __instance)
-        //    {
-        //        var wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterObj>();
-        //        if (wEffect == null)
-        //        {
-        //            wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-        //        }
-        //        else if (wEffect.effectType >= WaterBuoyancy.EffectTypes.MissileProjectile)
-        //        {
-        //            return;
-        //        }
-
-        //        wEffect.effectBase = __instance;
-        //        wEffect.effectType = WaterBuoyancy.EffectTypes.MissileProjectile;
-        //        wEffect.GetRBody();
-        //    }
-        //}
-
-        //[HarmonyPatch(typeof(Projectile), "Fire")]
-        //private class PatchProjectile
-        //{
-        //    private static void Prefix(Projectile __instance)
-        //    {
-        //        var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
-        //        if (wEffect == null)
-        //        {
-        //            wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-        //        }
-        //        else
-        //        {
-        //            return;
-        //        }
-
-        //        wEffect.effectBase = __instance;
-        //        wEffect.effectType = WaterBuoyancy.EffectTypes.NormalProjectile;
-        //        wEffect.GetRBody();
-        //    }
-        //}
-
-        //[HarmonyPatch(typeof(LaserProjectile), "Fire")]
-        //private class PatchLaser
-        //{
-        //    private static void Prefix(LaserProjectile __instance)
-        //    {
-        //        var wEffect = __instance.GetComponent<WaterBuoyancy.WaterObj>();
-        //        if (wEffect == null)
-        //        {
-        //            wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
-        //        }
-        //        else if (wEffect.effectType >= WaterBuoyancy.EffectTypes.LaserProjectile)
-        //        {
-        //            return;
-        //        }
-
-        //        wEffect.effectBase = __instance;
-        //        wEffect.effectType = WaterBuoyancy.EffectTypes.LaserProjectile;
-        //        wEffect.GetRBody();
-        //    }
-        //}
-
         [HarmonyPatch(typeof(ResourcePickup))]
         [HarmonyPatch("OnPool")]
         private class PatchResource
         {
+            [HarmonyPostfix]
             private static void Postfix(ResourcePickup __instance)
             {
                 var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterObj>();
@@ -817,6 +759,7 @@ namespace WaterMod
             public int SubmergeCount = 0;
             public Vector3 SurfaceAdditivePos = Vector3.zero;
             public int SurfaceCount = 0;
+            private WaterBlock wBlock;
 
             public void Subscribe(Tank tank)
             {
@@ -839,12 +782,17 @@ namespace WaterMod
 
             public void AddBlock(TankBlock tankblock, Tank tank)
             {
-                tankblock.GetComponent<WaterBlock>().watertank = this;
+                wBlock = tankblock.GetComponent<WaterBlock>();
+                if (wBlock == null)
+                {
+                    wBlock = tankblock.gameObject.AddComponent<WaterBlock>();
+                }
+                wBlock.watertank = this;
             }
 
             public void RemoveBlock(TankBlock tankblock, Tank tank)
             {
-                tankblock.GetComponent<WaterBlock>().watertank = null;
+                wBlock.watertank = null;
             }
 
             public void FixedUpdate()
