@@ -670,7 +670,14 @@ namespace WaterMod
                 {
                     IEnumerable<Shader> shaders = Resources.FindObjectsOfTypeAll<Shader>();
                     shaders = shaders.Where(s => s.name == "Standard");
-                    shader = shaders.ElementAt(0);
+                    if (shaders.Count() > 1)
+                    {
+                        shader = shaders.ElementAt(1);
+                    }
+                    else if (shaders.Count() == 1)
+                    {
+                        shader = shaders.ElementAt(0);
+                    }
                 }
                 var defaultWater = new Material(shader)
                 {
