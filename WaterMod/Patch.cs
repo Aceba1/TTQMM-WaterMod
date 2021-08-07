@@ -181,7 +181,11 @@ namespace WaterMod
             [HarmonyPostfix]
             private static void Postfix(TankBlock __instance)
             {
-                var wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterBlock>();
+                WaterBuoyancy.WaterBlock wEffect = __instance.gameObject.GetComponent<WaterBuoyancy.WaterBlock>();
+                if (wEffect == null)
+                {
+                    wEffect = __instance.gameObject.AddComponent<WaterBuoyancy.WaterBlock>();
+                }
                 wEffect.TankBlock = __instance;
                 if (__instance.BlockCategory == BlockCategories.Flight)
                 {
@@ -366,8 +370,6 @@ namespace WaterMod
         {
             _inst.gameObject.SetActive(IsActive);
         }
-
-
 
         internal bool Heart = false;
         private void OnTriggerStay(Collider collider)
