@@ -841,6 +841,10 @@ namespace WaterMod
                     {
                         return;
                     }
+                    if (TankBlock == null)
+                    {
+                        TankBlock = base.GetComponentInParent<TankBlock>();
+                    }
                     var e = TankBlock.centreOfMassWorld;
                     surface.UpdatePos(new Vector3(e.x, HeightCalc, e.z));
                     surfaceExist = true;
@@ -881,14 +885,19 @@ namespace WaterMod
 
             public override void Stay(byte HeartBeat)
             {
-                if (heartBeat == HeartBeat)
+                if (this.heartBeat == HeartBeat)
                 {
                     return;
                 }
 
-                heartBeat = HeartBeat;
+                this.heartBeat = HeartBeat;
                 try
                 {
+                    if (TankBlock == null)
+                    {
+                        TankBlock = base.GetComponentInParent<TankBlock>();
+                    }
+
                     if (TankBlock.tank != null)
                     {
                         if (watertank == null || watertank.tank != TankBlock.tank)
