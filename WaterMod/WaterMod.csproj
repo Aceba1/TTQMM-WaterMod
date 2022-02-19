@@ -49,9 +49,8 @@
       <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="QModInstaller">
-      <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\QModInstaller.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="DebugWrapper">
+      <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\DebugWrapper.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -100,10 +99,12 @@
   <ItemGroup>
     <Compile Include="NetworkHandler.cs" />
     <Compile Include="OBJParser.cs" />
+    <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="WaterBuoyancy.cs" />
+    <Compile Include="WaterMod.cs" />
     <Compile Include="WaterParticleHandler.cs" />
     <Compile Include="Patch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WeatherMod.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\plane.obj">
