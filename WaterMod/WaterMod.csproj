@@ -37,14 +37,6 @@
       <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="0Nuterra.NativeOptions">
-      <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\QMods\0Nuterra.NativeOptions\0Nuterra.NativeOptions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="AcModHelper.Config">
-      <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\QMods\ModHelper.Config\AcModHelper.Config.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\..\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
@@ -114,28 +106,52 @@
     <None Include="mod.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Content Include="Assets\waterassets">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\Splash.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ConfigHelper\ConfigHelper.csproj">
+      <Project>{f4501c98-fb8c-4305-ba8e-eadcf0db86a3}</Project>
+      <Name>ConfigHelper</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Nuterra.NativeOptions\Nuterra.NativeOptions\Nuterra.NativeOptions.csproj">
+      <Project>{14ae920e-93c1-4faa-b51c-a21a167667b2}</Project>
+      <Name>Nuterra.NativeOptions</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del *.pdb
 @setlocal enableextensions enabledelayedexpansion
 
-set modpath="E:\Steam\steamapps\common\TerraTech\QMods\$(SolutionName)"
+set qmodpath="E:\Steam\steamapps\common\TerraTech\QMods\$(SolutionName)"
 
 if not exist !modpath! (
 echo Creating directory at game's QMods folder
+mkdir !qmodpath!
+)
+echo Copying to game [TTQMM] (!modpath!)
+set e=$(TargetDir)&gt;nul
+xcopy /S /Y /R /I "!e:~0,-1!" !qmodpath!
+
+set modpath="E:\Steam\steamapps\common\TerraTech\LocalMods\WaterMod\"
+set unitypath="E:\Documents\Unity\Projects\TT Modding\Assets\Mods\WaterMod\"
+
+if not exist !modpath! (
+echo Creating mod folder
 mkdir !modpath!
 )
-echo Copying to game (!modpath!)
-set e=$(TargetDir)&gt;nul
-xcopy /S /Y /R /I "!e:~0,-1!" !modpath!</PostBuildEvent>
+
+set e=$(TargetDir)..\&gt;nul
+
+echo Copying to game
+xcopy /S /Y /R "$(TargetFileName)" !modpath!
+echo Copying to Unity
+xcopy /S /Y /R "$(TargetFileName)" !unitypath!</PostBuildEvent>
   </PropertyGroup>
 </Project>

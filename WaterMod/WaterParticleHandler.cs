@@ -47,6 +47,24 @@ namespace WaterMod
             Debug.Log("WaterMod: Created Water Effects");
         }
 
+        // Source: https://answers.unity.com/questions/651984/convert-sprite-image-to-texture.html
+        private static Texture2D textureFromSprite(Sprite sprite)
+        {
+            if (sprite.rect.width != sprite.texture.width)
+            {
+                Texture2D newText = new Texture2D((int)sprite.rect.width, (int)sprite.rect.height);
+                Color[] newColors = sprite.texture.GetPixels((int)sprite.textureRect.x,
+                                                             (int)sprite.textureRect.y,
+                                                             (int)sprite.textureRect.width,
+                                                             (int)sprite.textureRect.height);
+                newText.SetPixels(newColors);
+                newText.Apply();
+                return newText;
+            }
+            else
+                return sprite.texture;
+        }
+
         private static void CreateSpriteMaterial()
         {
             Material material = null;
@@ -63,10 +81,29 @@ namespace WaterMod
             spriteMaterial = new Material(material);
 
             blurredMat = new Material(material);
-            var tex = new Texture2D(0, 0);
-            tex.LoadImage(File.ReadAllBytes(Path.Combine(QPatch.assets_path, "Splash.png")));
-            tex.Apply();
-            blurredMat.mainTexture = tex;
+            if (WaterMod.TTMMInited)
+            {
+                var tex = new Texture2D(0, 0);
+                tex.LoadImage(File.ReadAllBytes(Path.Combine(QPatch.assets_path, "Splash.png")));
+                tex.Apply();
+                blurredMat.mainTexture = tex;
+            }
+            else
+            {
+                ModContainer container = Singleton.Manager<ManMods>.inst.FindMod("WaterMod");
+                UnityEngine.Object obj = container.Contents.FindAsset("Splash.png");
+                if (obj != null)
+                {
+                    if (obj is Sprite sprite)
+                    {
+                        blurredMat.mainTexture = textureFromSprite(sprite);
+                    }
+                    else if (obj is Texture2D texture)
+                    {
+                        blurredMat.mainTexture = texture;
+                    }
+                }
+            }
         }
 
         private static void CreateSplash()

@@ -1,14 +1,10 @@
 // https://github.com/fuqunaga/RapidGUI
 
-using System;
 using System.Reflection;
 using HarmonyLib;
-using ModHelper.Config;
+using ModHelper;
 using UnityEngine;
 using Nuterra.NativeOptions;
-using UnityEngine.Events;
-using System.Linq;
-using System.Collections.Generic;
 using System.IO;
 
 namespace WaterMod
@@ -53,10 +49,10 @@ namespace WaterMod
 
             if (!WaterMod.Inited)
             {
-                ApplyPatch();
-                SetupResources();
                 WaterMod.Inited = true;
                 WaterMod.TTMMInited = true;
+                ApplyPatch();
+                SetupResources();
             }
         }
 
@@ -67,7 +63,7 @@ namespace WaterMod
 
         public static void SetupResources()
         {
-            assetBundle = AssetBundle.LoadFromFile(Path.Combine(assets_path, "waterassets"));
+            assetBundle = AssetBundle.LoadFromFile(Path.Combine(asm_path, "waterassets.assetbundle"));
 
             ModConfig thisMod = new ModConfig();
 

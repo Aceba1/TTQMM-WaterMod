@@ -21,6 +21,7 @@ namespace WaterMod
             if (!Inited)
             {
                 QPatch.SetupResources();
+                QPatch.ApplyPatch();
                 Inited = true;
             }
         }
@@ -32,18 +33,10 @@ namespace WaterMod
 
         public override void DeInit()
         {
-            if (!TTMMInited)
-            {
-                QPatch.harmony.UnpatchAll(QPatch.HarmonyID);
-            }
         }
 
         public override void Init()
         {
-            if (!TTMMInited)
-            {
-                QPatch.ApplyPatch();
-            }
         }
     }
 }

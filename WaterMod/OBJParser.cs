@@ -11,7 +11,6 @@ namespace WaterMod
 {
     public class OBJParser
     {
-        public static Mesh MeshFromFile(string localPath) => MeshFromFile(localPath, new Mesh());
         public static Mesh MeshFromFile(string localPath, Mesh modelToEdit)
         {
             string _localPath = System.IO.Path.Combine(Assembly.GetCallingAssembly().Location, "../" + localPath);
@@ -61,15 +60,11 @@ namespace WaterMod
         private static readonly float[] pow10 = GenerateLookupTable();
 
         // Use this for initialization
-        public Mesh ImportFileFromPath(string filePath) => ImportFileFromPath(filePath, new Mesh());
-
         public Mesh ImportFileFromPath(string filePath, Mesh model)
         {
             System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             return ImportFileFromData(File.ReadAllText(filePath), model);
         }
-
-        public Mesh ImportFileFromData(string entireText) => ImportFileFromData(entireText, new Mesh());
 
         public Mesh ImportFileFromData(string entireText, Mesh model)
         {

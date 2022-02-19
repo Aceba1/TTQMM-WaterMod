@@ -34,6 +34,7 @@ namespace WaterMod
 
         public void Save()
         {
+            QPatch.Height.Value = Height;
             QPatch._thisMod.WriteConfigJsonFile();
         }
 
@@ -294,7 +295,7 @@ namespace WaterMod
                         waterGUI.gameObject.SetActive(ShowGUI);
                         if (!ShowGUI)
                         {
-                            QPatch._thisMod.WriteConfigJsonFile();
+                            this.Save();
                         }
                     }
 
@@ -304,14 +305,6 @@ namespace WaterMod
                     NetHeightSmooth = NetHeightSmooth * 0.9f + NetworkHandler.ServerWaterHeight * 0.1f;
                 }
                 folder.transform.position = new Vector3(Singleton.camera.transform.position.x, HeightCalc, Singleton.camera.transform.position.z);
-                /*if (_WeatherMod && !flag)
-                {
-                    float dTime = Time.deltaTime;
-                    float newHeight = RainFlood;
-                    //newHeight += WeatherMod.RainWeight * RainWeightMultiplier * dTime;
-                    newHeight *= 1f - RainDrainMultiplier * dTime;
-                    RainFlood += Mathf.Clamp(newHeight - RainFlood, -FloodChangeClamp * dTime, FloodChangeClamp * dTime);
-                }*/
             }
             catch { }
         }
@@ -417,7 +410,25 @@ namespace WaterMod
                 d.Log("Creating fancy Mesh");
                 Mesh fancyMesh = new Mesh();
                 fancyMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-                fancyMesh = OBJParser.MeshFromFile("Assets/plane.obj", fancyMesh);
+
+                if (WaterMod.TTMMInited)
+                {
+                    fancyMesh = OBJParser.MeshFromFile("Assets/plane.obj", fancyMesh);
+                }
+                else
+                {
+                    ModContainer container = Singleton.Manager<ManMods>.inst.FindMod("WaterMod");
+                    foreach (UnityEngine.Object obj in container.Contents.FindAllAssets("plane.obj"))
+                    {
+                        if (obj != null)
+                        {
+                            if (obj is Mesh)
+                                fancyMesh = (Mesh)obj;
+                            else if (obj is GameObject)
+                                fancyMesh = ((GameObject)obj).GetComponentInChildren<MeshFilter>().sharedMesh;
+                        }
+                    }
+                }
 
                 waterLooks.Add(new WaterLook()
                 {
